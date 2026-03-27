@@ -105,7 +105,7 @@ defmodule Anubis.Server.Transport.StreamableHTTP.PlugPersistenceTest do
 
       conn =
         :post
-        |> conn("/", JSON.encode!(message))
+        |> conn("/", Jason.encode!(message))
         |> put_req_header("content-type", "application/json")
         |> put_req_header("accept", "application/json, text/event-stream")
         |> put_req_header("mcp-session-id", session_id)
@@ -233,7 +233,7 @@ defmodule Anubis.Server.Transport.StreamableHTTP.PlugPersistenceTest do
 
       conn =
         :post
-        |> conn("/", JSON.encode!(message))
+        |> conn("/", Jason.encode!(message))
         |> put_req_header("content-type", "application/json")
         |> put_req_header("accept", "application/json")
 

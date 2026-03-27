@@ -147,11 +147,11 @@ defmodule Anubis.Server.Session.SerializationTest do
   end
 
   defp json_round_trip(data) do
-    data |> JSON.encode!() |> JSON.decode!()
+    data |> Jason.encode!() |> Jason.decode!()
   end
 
   defp try_json_encode(data) do
-    {:ok, JSON.encode!(data)}
+    {:ok, Jason.encode!(data)}
   rescue
     e -> {:error, e}
   end

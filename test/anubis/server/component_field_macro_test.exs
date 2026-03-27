@@ -33,7 +33,7 @@ defmodule Anubis.Server.ComponentFieldMacroTest do
                        "format" => "postal-code"
                      }
                    },
-                   "required" => ["street", "city"]
+                   "required" => ["city", "street"]
                  },
                  "contact" => %{
                    "type" => "object",
@@ -369,7 +369,7 @@ defmodule Anubis.Server.ComponentFieldMacroTest do
       assert features_props["config"]["maxLength"] == 200
 
       # Test nested required fields
-      assert json_schema["required"] == ["title", "settings"]
+      assert json_schema["required"] == ["settings", "title"]
       assert json_schema["properties"]["settings"]["required"] == ["environment"]
       # Required fields order doesn't matter, just check both are present
       required_fields = json_schema["properties"]["features"]["items"]["required"]

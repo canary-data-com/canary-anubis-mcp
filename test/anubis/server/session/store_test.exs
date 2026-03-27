@@ -124,7 +124,7 @@ defmodule Anubis.Server.Session.StoreTest do
 
       {:ok, stored_state} = MockSessionStore.load(session_id, [])
 
-      json = JSON.encode!(stored_state)
+      json = Jason.encode!(stored_state)
       assert is_binary(json)
     end
 

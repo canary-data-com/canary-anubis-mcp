@@ -470,16 +470,16 @@ defmodule Anubis.Server.Component.SchemaTest do
 
       result = Schema.to_prompt_arguments(schema)
 
-      assert result == [
-               %{
-                 "name" => "language",
-                 "description" => "Programming language",
-                 "required" => true
-               },
+      assert Enum.sort_by(result, & &1["name"]) == [
                %{
                  "name" => "focus",
                  "description" => "Areas to focus on",
                  "required" => false
+               },
+               %{
+                 "name" => "language",
+                 "description" => "Programming language",
+                 "required" => true
                }
              ]
     end

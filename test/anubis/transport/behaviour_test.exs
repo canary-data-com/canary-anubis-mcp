@@ -31,7 +31,7 @@ defmodule Anubis.Transport.BehaviourTest do
 
     test "parse/2 decodes newline-delimited JSON" do
       {:ok, state} = ClientSTDIO.transport_init()
-      json = JSON.encode!(@sample_request) <> "\n"
+      json = Jason.encode!(@sample_request) <> "\n"
 
       assert {:ok, [@sample_request], %{buffer: ""}} = ClientSTDIO.parse(json, state)
     end
@@ -40,8 +40,8 @@ defmodule Anubis.Transport.BehaviourTest do
       {:ok, state} = ClientSTDIO.transport_init()
 
       json =
-        JSON.encode!(@sample_request) <>
-          "\n" <> JSON.encode!(@sample_response) <> "\n"
+        Jason.encode!(@sample_request) <>
+          "\n" <> Jason.encode!(@sample_response) <> "\n"
 
       assert {:ok, [@sample_request, @sample_response], %{buffer: ""}} =
                ClientSTDIO.parse(json, state)
@@ -79,7 +79,7 @@ defmodule Anubis.Transport.BehaviourTest do
 
       assert {:ok, encoded, ^state} = ClientSTDIO.encode(@sample_request, state)
       assert String.ends_with?(encoded, "\n")
-      assert {:ok, decoded} = JSON.decode(String.trim(encoded))
+      assert {:ok, decoded} = Jason.decode(String.trim(encoded))
       assert decoded == @sample_request
     end
 
@@ -110,7 +110,7 @@ defmodule Anubis.Transport.BehaviourTest do
 
     test "parse/2 decodes JSON string" do
       {:ok, state} = ClientHTTP.transport_init()
-      json = JSON.encode!(@sample_request)
+      json = Jason.encode!(@sample_request)
 
       assert {:ok, [@sample_request], ^state} = ClientHTTP.parse(json, state)
     end
@@ -122,7 +122,7 @@ defmodule Anubis.Transport.BehaviourTest do
 
     test "parse/2 handles JSON arrays (batching)" do
       {:ok, state} = ClientHTTP.transport_init()
-      batch = JSON.encode!([@sample_request, @sample_response])
+      batch = Jason.encode!([@sample_request, @sample_response])
 
       assert {:ok, [@sample_request, @sample_response], ^state} =
                ClientHTTP.parse(batch, state)
@@ -138,7 +138,7 @@ defmodule Anubis.Transport.BehaviourTest do
 
       assert {:ok, encoded, ^state} = ClientHTTP.encode(@sample_request, state)
       refute String.ends_with?(encoded, "\n")
-      assert {:ok, decoded} = JSON.decode(encoded)
+      assert {:ok, decoded} = Jason.decode(encoded)
       assert decoded == @sample_request
     end
 
@@ -190,7 +190,7 @@ defmodule Anubis.Transport.BehaviourTest do
 
     test "parse/2 decodes JSON string" do
       {:ok, state} = ClientSSE.transport_init()
-      json = JSON.encode!(@sample_request)
+      json = Jason.encode!(@sample_request)
 
       assert {:ok, [@sample_request], ^state} = ClientSSE.parse(json, state)
     end
@@ -247,9 +247,9 @@ defmodule Anubis.Transport.BehaviourTest do
 
         json =
           if unquote(mod) in [ClientSTDIO] do
-            JSON.encode!(@sample_request) <> "\n"
+            Jason.encode!(@sample_request) <> "\n"
           else
-            JSON.encode!(@sample_request)
+            Jason.encode!(@sample_request)
           end
 
         assert {:ok, [msg], _state} = unquote(mod).parse(json, state)

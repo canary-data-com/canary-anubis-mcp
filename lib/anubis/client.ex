@@ -223,7 +223,7 @@ defmodule Anubis.Client do
     {:name, {{:custom, &Anubis.genserver_name/1}, {:default, __MODULE__}}},
     {:transport, {:required, {:custom, &Anubis.client_transport/1}}},
     {:client_info, {:required, :map}},
-    {:capabilities, {:required, :map}},
+    {:capabilities, {:map, {:default, %{}}}},
     {:protocol_version, {:string, {:default, @default_protocol_version}}},
     {:timeout, {:integer, {:default, @default_operation_timeout}}}
   ])

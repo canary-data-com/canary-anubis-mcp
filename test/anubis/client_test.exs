@@ -53,7 +53,7 @@ defmodule Anubis.ClientTest do
 
     test "ping sends correct request", %{client: client} do
       expect(Anubis.MockTransport, :send_message, fn _, message, _ ->
-        decoded = JSON.decode!(message)
+        decoded = Jason.decode!(message)
         assert decoded["method"] == "ping"
         assert decoded["params"] == %{}
         assert decoded["jsonrpc"] == "2.0"
@@ -76,7 +76,7 @@ defmodule Anubis.ClientTest do
 
     test "list_resources sends correct request", %{client: client} do
       expect(Anubis.MockTransport, :send_message, fn _, message, _ ->
-        decoded = JSON.decode!(message)
+        decoded = Jason.decode!(message)
         assert decoded["method"] == "resources/list"
         assert decoded["params"] == %{}
         :ok
@@ -106,7 +106,7 @@ defmodule Anubis.ClientTest do
 
     test "list_resource_templates sends correct request", %{client: client} do
       expect(Anubis.MockTransport, :send_message, fn _, message, _ ->
-        decoded = JSON.decode!(message)
+        decoded = Jason.decode!(message)
         assert decoded["method"] == "resources/templates/list"
         assert decoded["params"] == %{}
         :ok
@@ -136,7 +136,7 @@ defmodule Anubis.ClientTest do
 
     test "list_resources with cursor", %{client: client} do
       expect(Anubis.MockTransport, :send_message, fn _, message, _ ->
-        decoded = JSON.decode!(message)
+        decoded = Jason.decode!(message)
         assert decoded["method"] == "resources/list"
         assert decoded["params"] == %{"cursor" => "next-page"}
         :ok
@@ -169,7 +169,7 @@ defmodule Anubis.ClientTest do
 
     test "read_resource sends correct request", %{client: client} do
       expect(Anubis.MockTransport, :send_message, fn _, message, _ ->
-        decoded = JSON.decode!(message)
+        decoded = Jason.decode!(message)
         assert decoded["method"] == "resources/read"
         assert decoded["params"] == %{"uri" => "test://uri"}
         :ok
@@ -199,7 +199,7 @@ defmodule Anubis.ClientTest do
 
     test "list_prompts sends correct request", %{client: client} do
       expect(Anubis.MockTransport, :send_message, fn _, message, _ ->
-        decoded = JSON.decode!(message)
+        decoded = Jason.decode!(message)
         assert decoded["method"] == "prompts/list"
         assert decoded["params"] == %{}
         :ok
@@ -229,7 +229,7 @@ defmodule Anubis.ClientTest do
 
     test "get_prompt sends correct request", %{client: client} do
       expect(Anubis.MockTransport, :send_message, fn _, message, _ ->
-        decoded = JSON.decode!(message)
+        decoded = Jason.decode!(message)
         assert decoded["method"] == "prompts/get"
 
         assert decoded["params"] == %{
@@ -269,7 +269,7 @@ defmodule Anubis.ClientTest do
 
     test "list_tools sends correct request", %{client: client} do
       expect(Anubis.MockTransport, :send_message, fn _, message, _ ->
-        decoded = JSON.decode!(message)
+        decoded = Jason.decode!(message)
         assert decoded["method"] == "tools/list"
         assert decoded["params"] == %{}
         :ok
@@ -299,7 +299,7 @@ defmodule Anubis.ClientTest do
 
     test "call_tool sends correct request", %{client: client} do
       expect(Anubis.MockTransport, :send_message, fn _, message, _ ->
-        decoded = JSON.decode!(message)
+        decoded = Jason.decode!(message)
         assert decoded["method"] == "tools/call"
 
         assert decoded["params"] == %{
@@ -337,7 +337,7 @@ defmodule Anubis.ClientTest do
 
     test "handles domain error responses as {:ok, response}", %{client: client} do
       expect(Anubis.MockTransport, :send_message, fn _, message, _ ->
-        decoded = JSON.decode!(message)
+        decoded = Jason.decode!(message)
         assert decoded["method"] == "tools/call"
 
         assert decoded["params"] == %{
@@ -383,7 +383,7 @@ defmodule Anubis.ClientTest do
 
     test "ping sends correct request since it is always supported", %{client: client} do
       expect(Anubis.MockTransport, :send_message, fn _, message, _ ->
-        decoded = JSON.decode!(message)
+        decoded = Jason.decode!(message)
         assert decoded["method"] == "ping"
         assert decoded["params"] == %{}
         assert decoded["jsonrpc"] == "2.0"
@@ -418,7 +418,7 @@ defmodule Anubis.ClientTest do
 
     test "handles error response", %{client: client} do
       expect(Anubis.MockTransport, :send_message, fn _, message, _ ->
-        decoded = JSON.decode!(message)
+        decoded = Jason.decode!(message)
         assert decoded["method"] == "ping"
         :ok
       end)
@@ -555,7 +555,7 @@ defmodule Anubis.ClientTest do
       progress_token = "request_token_test"
 
       expect(Anubis.MockTransport, :send_message, fn _, message, _ ->
-        decoded = JSON.decode!(message)
+        decoded = Jason.decode!(message)
         assert decoded["method"] == "resources/list"
 
         assert decoded["params"] == %{
@@ -607,7 +607,7 @@ defmodule Anubis.ClientTest do
 
     test "set_log_level sends the correct request", %{client: client} do
       expect(Anubis.MockTransport, :send_message, fn _, message, _ ->
-        decoded = JSON.decode!(message)
+        decoded = Jason.decode!(message)
         assert decoded["method"] == "logging/setLevel"
         assert decoded["params"]["level"] == "info"
         :ok
@@ -639,7 +639,7 @@ defmodule Anubis.ClientTest do
       argument = %{"name" => "language", "value" => "py"}
 
       expect(Anubis.MockTransport, :send_message, fn _, message, _ ->
-        decoded = JSON.decode!(message)
+        decoded = Jason.decode!(message)
         assert decoded["method"] == "completion/complete"
         assert decoded["params"]["ref"]["type"] == "ref/prompt"
         assert decoded["params"]["ref"]["name"] == "code_review"
@@ -682,7 +682,7 @@ defmodule Anubis.ClientTest do
       argument = %{"name" => "encoding", "value" => "ut"}
 
       expect(Anubis.MockTransport, :send_message, fn _, message, _ ->
-        decoded = JSON.decode!(message)
+        decoded = Jason.decode!(message)
         assert decoded["method"] == "completion/complete"
         assert decoded["params"]["ref"]["type"] == "ref/resource"
         assert decoded["params"]["ref"]["uri"] == "file:///path/to/file.txt"
@@ -751,14 +751,14 @@ defmodule Anubis.ClientTest do
       Anubis.MockTransport
       # the handle_continue
       |> expect(:send_message, fn _, message, _ ->
-        decoded = JSON.decode!(message)
+        decoded = Jason.decode!(message)
         assert decoded["method"] == "initialize"
         assert decoded["jsonrpc"] == "2.0"
         :ok
       end)
       # the send_notification
       |> expect(:send_message, fn _, message, _ ->
-        decoded = JSON.decode!(message)
+        decoded = Jason.decode!(message)
         assert decoded["method"] == "notifications/initialized"
         :ok
       end)
@@ -794,7 +794,7 @@ defmodule Anubis.ClientTest do
 
     test "handles cancelled notification from server", %{client: client} do
       expect(Anubis.MockTransport, :send_message, fn _, message, _ ->
-        decoded = JSON.decode!(message)
+        decoded = Jason.decode!(message)
         assert decoded["method"] == "tools/call"
         :ok
       end)
@@ -822,7 +822,7 @@ defmodule Anubis.ClientTest do
 
     test "client can cancel a request", %{client: client} do
       expect(Anubis.MockTransport, :send_message, fn _, message, _ ->
-        decoded = JSON.decode!(message)
+        decoded = Jason.decode!(message)
         assert decoded["method"] == "resources/list"
         :ok
       end)
@@ -835,7 +835,7 @@ defmodule Anubis.ClientTest do
       assert request_id
 
       expect(Anubis.MockTransport, :send_message, fn _, message, _ ->
-        decoded = JSON.decode!(message)
+        decoded = Jason.decode!(message)
         assert decoded["method"] == "notifications/cancelled"
         assert decoded["params"]["requestId"] == request_id
         assert decoded["params"]["reason"] == "test cancellation"
@@ -866,7 +866,7 @@ defmodule Anubis.ClientTest do
 
     test "cancel_all_requests cancels all pending requests", %{client: client} do
       expect(Anubis.MockTransport, :send_message, 2, fn _, message, _ ->
-        decoded = JSON.decode!(message)
+        decoded = Jason.decode!(message)
         assert decoded["method"] in ["resources/list", "tools/list"]
         :ok
       end)
@@ -881,7 +881,7 @@ defmodule Anubis.ClientTest do
       assert pending_count == 2
 
       expect(Anubis.MockTransport, :send_message, 2, fn _, message, _ ->
-        decoded = JSON.decode!(message)
+        decoded = Jason.decode!(message)
         assert decoded["method"] == "notifications/cancelled"
         assert decoded["params"]["reason"] == "batch cancellation"
         :ok
@@ -906,13 +906,13 @@ defmodule Anubis.ClientTest do
       test_timeout = 50
 
       expect(Anubis.MockTransport, :send_message, fn _, message, _ ->
-        decoded = JSON.decode!(message)
+        decoded = Jason.decode!(message)
         assert decoded["method"] == "resources/list"
         :ok
       end)
 
       expect(Anubis.MockTransport, :send_message, fn _, message, _ ->
-        decoded = JSON.decode!(message)
+        decoded = Jason.decode!(message)
         assert decoded["method"] == "notifications/cancelled"
         assert decoded["params"]["reason"] == "timeout"
         :ok
@@ -937,7 +937,7 @@ defmodule Anubis.ClientTest do
       test_timeout = 50
 
       expect(Anubis.MockTransport, :send_message, fn _, message, _ ->
-        decoded = JSON.decode!(message)
+        decoded = Jason.decode!(message)
         assert decoded["method"] == "resources/list"
         Process.sleep(test_timeout + 10)
         :ok
@@ -961,13 +961,13 @@ defmodule Anubis.ClientTest do
 
     test "client.close sends cancellation for pending requests", %{client: client} do
       expect(Anubis.MockTransport, :send_message, fn _, message, _ ->
-        decoded = JSON.decode!(message)
+        decoded = Jason.decode!(message)
         assert decoded["method"] == "resources/list"
         :ok
       end)
 
       expect(Anubis.MockTransport, :send_message, fn _, message, _ ->
-        decoded = JSON.decode!(message)
+        decoded = Jason.decode!(message)
         assert decoded["method"] == "notifications/cancelled"
         assert decoded["params"]["reason"] == "client closed"
         :ok
@@ -1118,7 +1118,7 @@ defmodule Anubis.ClientTest do
       request_id = "server_req_123"
 
       expect(Anubis.MockTransport, :send_message, fn _, message, _ ->
-        decoded = JSON.decode!(message)
+        decoded = Jason.decode!(message)
         assert decoded["jsonrpc"] == "2.0"
         assert decoded["id"] == request_id
         assert Map.has_key?(decoded, "result")
@@ -1200,7 +1200,7 @@ defmodule Anubis.ClientTest do
       }
 
       expect(Anubis.MockTransport, :send_message, fn _, message, _ ->
-        decoded = JSON.decode!(message)
+        decoded = Jason.decode!(message)
         assert decoded["jsonrpc"] == "2.0"
         assert decoded["id"] == request_id
         assert Map.has_key?(decoded, "result")
@@ -1237,7 +1237,7 @@ defmodule Anubis.ClientTest do
       }
 
       expect(Anubis.MockTransport, :send_message, fn _, message, _ ->
-        decoded = JSON.decode!(message)
+        decoded = Jason.decode!(message)
         assert decoded["jsonrpc"] == "2.0"
         assert decoded["id"] == request_id
         assert Map.has_key?(decoded, "error")
@@ -1275,7 +1275,7 @@ defmodule Anubis.ClientTest do
       params = %{"messages" => [], "modelPreferences" => %{}}
 
       expect(Anubis.MockTransport, :send_message, fn _, message, _ ->
-        decoded = JSON.decode!(message)
+        decoded = Jason.decode!(message)
         assert decoded["jsonrpc"] == "2.0"
         assert decoded["id"] == request_id
         assert Map.has_key?(decoded, "error")
@@ -1313,7 +1313,7 @@ defmodule Anubis.ClientTest do
       params = %{"messages" => [], "modelPreferences" => %{}}
 
       expect(Anubis.MockTransport, :send_message, fn _, message, _ ->
-        decoded = JSON.decode!(message)
+        decoded = Jason.decode!(message)
         assert decoded["jsonrpc"] == "2.0"
         assert decoded["id"] == request_id
         assert Map.has_key?(decoded, "error")
@@ -1344,7 +1344,7 @@ defmodule Anubis.ClientTest do
     @tag client_capabilities: %{"roots" => %{"listChanged" => true}}
     test "sends notification when adding a root", %{client: client} do
       expect(Anubis.MockTransport, :send_message, fn _, message, _ ->
-        decoded = JSON.decode!(message)
+        decoded = Jason.decode!(message)
         assert decoded["jsonrpc"] == "2.0"
         assert decoded["method"] == "notifications/roots/list_changed"
         assert is_map(decoded["params"])
@@ -1367,7 +1367,7 @@ defmodule Anubis.ClientTest do
       Process.sleep(50)
 
       expect(Anubis.MockTransport, :send_message, fn _, message, _ ->
-        decoded = JSON.decode!(message)
+        decoded = Jason.decode!(message)
         assert decoded["jsonrpc"] == "2.0"
         assert decoded["method"] == "notifications/roots/list_changed"
         assert is_map(decoded["params"])
@@ -1399,7 +1399,7 @@ defmodule Anubis.ClientTest do
       Process.sleep(50)
 
       expect(Anubis.MockTransport, :send_message, fn _, message, _ ->
-        decoded = JSON.decode!(message)
+        decoded = Jason.decode!(message)
         assert decoded["jsonrpc"] == "2.0"
         assert decoded["method"] == "notifications/roots/list_changed"
         assert is_map(decoded["params"])
@@ -1428,7 +1428,7 @@ defmodule Anubis.ClientTest do
 
     test "validates tool call output when structuredContent is present", %{client: client} do
       expect(Anubis.MockTransport, :send_message, fn _, message, _ ->
-        decoded = JSON.decode!(message)
+        decoded = Jason.decode!(message)
         assert decoded["method"] == "tools/list"
         :ok
       end)
@@ -1457,7 +1457,7 @@ defmodule Anubis.ClientTest do
       assert {:ok, _} = Task.await(list_task)
 
       expect(Anubis.MockTransport, :send_message, fn _, message, _ ->
-        decoded = JSON.decode!(message)
+        decoded = Jason.decode!(message)
         assert decoded["method"] == "tools/call"
         assert decoded["params"]["name"] == "get_weather"
         :ok

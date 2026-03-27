@@ -700,7 +700,7 @@ defmodule Anubis.Server.Response do
 
   @annotations_schema %{
     last_modified: :datetime,
-    priority: {:float, gte: 0.0, lte: 1.0},
+    priority: {:float, {:range, {0.0, 1.0}}},
     audience: {:list, {:enum, ~w(user assistant)}}
   }
 

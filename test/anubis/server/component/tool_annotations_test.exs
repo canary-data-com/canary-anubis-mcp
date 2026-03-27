@@ -34,7 +34,7 @@ defmodule Anubis.Server.Component.ToolAnnotationsTest do
 
       item_schema = results_schema["items"]
       assert item_schema["type"] == "object"
-      assert item_schema["required"] == ["id", "title", "score"]
+      assert Enum.sort(item_schema["required"]) == Enum.sort(["id", "title", "score"])
     end
   end
 
@@ -242,7 +242,7 @@ defmodule Anubis.Server.Component.ToolAnnotationsTest do
       assert result["content"]
       text_content = Enum.find(result["content"], &(&1["type"] == "text"))
       assert text_content
-      decoded = JSON.decode!(text_content["text"])
+      decoded = Jason.decode!(text_content["text"])
       assert decoded == structured
 
       assert result["isError"] == false

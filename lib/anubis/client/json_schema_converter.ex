@@ -240,7 +240,7 @@ defmodule Anubis.Client.JSONSchemaConverter do
 
   defp apply_constraint({base, constraint}, schema, json_key, handler) when is_tuple(constraint) do
     case apply_constraint(base, schema, json_key, handler) do
-      {_base, new_constraint} -> {base, [constraint, new_constraint]}
+      {_base, new_constraint} -> combine_constraints(base, constraint, new_constraint)
       base -> {base, constraint}
     end
   end
@@ -266,6 +266,30 @@ defmodule Anubis.Client.JSONSchemaConverter do
           :datetime -> :datetime
           constraint -> {base, constraint}
         end
+    end
+  end
+
+  defp combine_constraints(base, c1, c2) do
+    case {c1, c2} do
+      {{:gte, min}, {:lte, max}} ->
+        {base, {:range, {min, max}}}
+
+      {{:lte, max}, {:gte, min}} ->
+        {base, {:range, {min, max}}}
+
+      {{:min, min}, {:max, max}} when base == :string ->
+        {:custom,
+         fn val ->
+           cond do
+             not is_binary(val) -> {:error, "expected string, got %{actual}", [actual: inspect(val)]}
+             String.length(val) < min -> {:error, "expected minimum length %{min}", [min: min]}
+             String.length(val) > max -> {:error, "expected maximum length %{max}", [max: max]}
+             true -> {:ok, val}
+           end
+         end}
+
+      _ ->
+        {base, [c1, c2]}
     end
   end
 

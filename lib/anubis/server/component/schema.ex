@@ -30,6 +30,7 @@ defmodule Anubis.Server.Component.Schema do
       schema
       |> Enum.filter(fn {_key, type} -> required?(type) end)
       |> Enum.map(fn {key, _type} -> to_string(key) end)
+      |> Enum.sort()
 
     base = %{"type" => "object", "properties" => properties}
 

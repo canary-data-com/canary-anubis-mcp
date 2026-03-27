@@ -123,7 +123,7 @@ defmodule Anubis.Server.ResponseTest do
                "isError" => false
              } = result
 
-      assert {:ok, decoded} = JSON.decode(text)
+      assert {:ok, decoded} = Jason.decode(text)
 
       assert decoded == %{
                "status" => "success",
@@ -176,7 +176,7 @@ defmodule Anubis.Server.ResponseTest do
                "isError" => false
              } = result
 
-      assert {:ok, decoded} = JSON.decode(text)
+      assert {:ok, decoded} = Jason.decode(text)
       assert decoded == %{"temperature" => 22.5, "conditions" => "Partly cloudy"}
     end
 

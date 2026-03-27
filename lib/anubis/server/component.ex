@@ -445,8 +445,40 @@ defmodule Anubis.Server.Component do
     case constraints do
       [] -> base_type
       [single] -> {base_type, single}
+      [{:gte, min}, {:lte, max}] -> {base_type, {:range, {min, max}}}
+      [{:lte, max}, {:gte, min}] -> {base_type, {:range, {min, max}}}
+      string_constraints when base_type == :string -> __string_multi_validator__(string_constraints)
       multiple -> {base_type, multiple}
     end
+  end
+
+  defp __string_multi_validator__(constraints) do
+    {:custom,
+     fn val ->
+       if is_binary(val) do
+         Enum.reduce_while(constraints, {:ok, val}, fn
+           {:min, min}, acc ->
+             if String.length(val) >= min,
+               do: {:cont, acc},
+               else: {:halt, {:error, "expected minimum length %{min}", [min: min]}}
+
+           {:max, max}, acc ->
+             if String.length(val) <= max,
+               do: {:cont, acc},
+               else: {:halt, {:error, "expected maximum length %{max}", [max: max]}}
+
+           {:regex, regex}, acc ->
+             if Regex.match?(regex, val),
+               do: {:cont, acc},
+               else: {:halt, {:error, "expected string matching %{pattern}", [pattern: inspect(regex)]}}
+
+           _other, acc ->
+             {:cont, acc}
+         end)
+       else
+         {:error, "expected string, got %{actual}", [actual: inspect(val)]}
+       end
+     end}
   end
 
   defp __extract_peri_constraints__(opts) do

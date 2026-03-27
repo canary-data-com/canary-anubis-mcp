@@ -12,8 +12,8 @@ defmodule Anubis.Server.Component.ToolMetaTest do
         meta: %{"source" => "test", "version" => 2}
       }
 
-      encoded = JSON.encode!(tool)
-      decoded = JSON.decode!(encoded)
+      encoded = Jason.encode!(tool)
+      decoded = Jason.decode!(encoded)
 
       assert decoded["_meta"] == %{"source" => "test", "version" => 2}
       assert decoded["name"] == "test_tool"
@@ -27,8 +27,8 @@ defmodule Anubis.Server.Component.ToolMetaTest do
         input_schema: %{"type" => "object", "properties" => %{}}
       }
 
-      encoded = JSON.encode!(tool)
-      decoded = JSON.decode!(encoded)
+      encoded = Jason.encode!(tool)
+      decoded = Jason.decode!(encoded)
 
       refute Map.has_key?(decoded, "_meta")
       assert decoded["name"] == "test_tool"
@@ -37,6 +37,8 @@ defmodule Anubis.Server.Component.ToolMetaTest do
 
   describe "meta callback" do
     test "meta callback is optional" do
+      Code.ensure_loaded!(ToolWithMeta)
+      Code.ensure_loaded!(ToolWithoutAnnotations)
       assert function_exported?(ToolWithMeta, :meta, 0)
       refute function_exported?(ToolWithoutAnnotations, :meta, 0)
     end
