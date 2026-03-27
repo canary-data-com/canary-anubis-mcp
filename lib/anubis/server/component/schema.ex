@@ -298,8 +298,9 @@ defmodule Anubis.Server.Component.Schema do
   defp describe_base_type(schema) when is_map(schema), do: "nested object"
   defp describe_base_type(_), do: "parameter"
 
-  @spec validator(schema()) :: (map() ->
-                                  {:ok, map()} | {:error, list(Peri.Error.t())})
+  @spec validator(schema()) ::
+          (map() ->
+             {:ok, map()} | {:error, list(Peri.Error.t())})
   def validator(schema) do
     normalized = normalize(schema)
     peri_schema = Component.__clean_schema_for_peri__(normalized)

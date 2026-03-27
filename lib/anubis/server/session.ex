@@ -26,7 +26,7 @@ defmodule Anubis.Server.Session do
   require Message
   require Server
 
-  @default_session_idle_timeout to_timeout(minute: 30)
+  @default_session_idle_timeout 1_800_000
 
   @type t :: %{
           session_id: String.t(),
@@ -65,7 +65,7 @@ defmodule Anubis.Server.Session do
     {:transport, {:required, {:custom, &Anubis.server_transport/1}}},
     {:registry, {:atom, {:default, Anubis.Server.Registry}}},
     {:session_idle_timeout, {{:integer, {:gte, 1}}, {:default, @default_session_idle_timeout}}},
-    {:timeout, {:integer, {:default, to_timeout(second: 30)}}},
+    {:timeout, {:integer, {:default, 30_000}}},
     {:task_supervisor, {:required, {:custom, &Anubis.genserver_name/1}}}
   ])
 
@@ -314,7 +314,6 @@ defmodule Anubis.Server.Session do
     end
   end
 
-  @impl GenServer
   def format_status(status) do
     Map.new(status, fn
       {:state, state} ->
@@ -679,7 +678,7 @@ defmodule Anubis.Server.Session do
   # Reply encoding
 
   defp encode_reply(message) when is_map(message) do
-    JSON.encode!(message)
+    Jason.encode!(message)
   end
 
   # Transport helpers

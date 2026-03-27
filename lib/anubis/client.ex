@@ -102,7 +102,7 @@ defmodule Anubis.Client do
   @client_capabilities ~w(roots sampling)a
 
   @default_protocol_version Protocol.latest_version()
-  @default_operation_timeout to_timeout(second: 30)
+  @default_operation_timeout 30_000
 
   @type t :: GenServer.server()
 
@@ -333,7 +333,7 @@ defmodule Anubis.Client do
         timeout: Keyword.get(opts, :timeout, @default_operation_timeout)
       })
 
-    buffer_timeout = operation.timeout + to_timeout(second: 1)
+    buffer_timeout = operation.timeout + 1_000
     GenServer.call(client, {:operation, operation}, buffer_timeout)
   end
 
@@ -361,7 +361,7 @@ defmodule Anubis.Client do
         timeout: Keyword.get(opts, :timeout, @default_operation_timeout)
       })
 
-    buffer_timeout = operation.timeout + to_timeout(second: 1)
+    buffer_timeout = operation.timeout + 1_000
     GenServer.call(client, {:operation, operation}, buffer_timeout)
   end
 
@@ -389,7 +389,7 @@ defmodule Anubis.Client do
         timeout: Keyword.get(opts, :timeout, @default_operation_timeout)
       })
 
-    buffer_timeout = operation.timeout + to_timeout(second: 1)
+    buffer_timeout = operation.timeout + 1_000
     GenServer.call(client, {:operation, operation}, buffer_timeout)
   end
 
@@ -414,7 +414,7 @@ defmodule Anubis.Client do
         timeout: Keyword.get(opts, :timeout, @default_operation_timeout)
       })
 
-    buffer_timeout = operation.timeout + to_timeout(second: 1)
+    buffer_timeout = operation.timeout + 1_000
     GenServer.call(client, {:operation, operation}, buffer_timeout)
   end
 
@@ -442,7 +442,7 @@ defmodule Anubis.Client do
         timeout: Keyword.get(opts, :timeout, @default_operation_timeout)
       })
 
-    buffer_timeout = operation.timeout + to_timeout(second: 1)
+    buffer_timeout = operation.timeout + 1_000
     GenServer.call(client, {:operation, operation}, buffer_timeout)
   end
 
@@ -470,7 +470,7 @@ defmodule Anubis.Client do
         timeout: Keyword.get(opts, :timeout, @default_operation_timeout)
       })
 
-    buffer_timeout = operation.timeout + to_timeout(second: 1)
+    buffer_timeout = operation.timeout + 1_000
     GenServer.call(client, {:operation, operation}, buffer_timeout)
   end
 
@@ -498,7 +498,7 @@ defmodule Anubis.Client do
         timeout: Keyword.get(opts, :timeout, @default_operation_timeout)
       })
 
-    buffer_timeout = operation.timeout + to_timeout(second: 1)
+    buffer_timeout = operation.timeout + 1_000
     GenServer.call(client, {:operation, operation}, buffer_timeout)
   end
 
@@ -526,7 +526,7 @@ defmodule Anubis.Client do
         timeout: Keyword.get(opts, :timeout, @default_operation_timeout)
       })
 
-    buffer_timeout = operation.timeout + to_timeout(second: 1)
+    buffer_timeout = operation.timeout + 1_000
     GenServer.call(client, {:operation, operation}, buffer_timeout)
   end
 
@@ -535,7 +535,7 @@ defmodule Anubis.Client do
   """
   @spec merge_capabilities(t, map(), opts :: Keyword.t()) :: map()
   def merge_capabilities(client, additional_capabilities, opts \\ []) do
-    timeout = opts[:timeout] || to_timeout(second: 5)
+    timeout = opts[:timeout] || 5_000
     GenServer.call(client, {:merge_capabilities, additional_capabilities}, timeout)
   end
 
@@ -546,7 +546,7 @@ defmodule Anubis.Client do
   """
   @spec get_server_capabilities(t, opts :: Keyword.t()) :: map() | nil
   def get_server_capabilities(client, opts \\ []) do
-    timeout = opts[:timeout] || to_timeout(second: 5)
+    timeout = opts[:timeout] || 5_000
     GenServer.call(client, :get_server_capabilities, timeout)
   end
 
@@ -557,7 +557,7 @@ defmodule Anubis.Client do
   """
   @spec get_server_info(t, opts :: Keyword.t()) :: map() | nil
   def get_server_info(client, opts \\ []) do
-    timeout = opts[:timeout] || to_timeout(second: 5)
+    timeout = opts[:timeout] || 5_000
     GenServer.call(client, :get_server_info, timeout)
   end
 
@@ -580,7 +580,7 @@ defmodule Anubis.Client do
         timeout: @default_operation_timeout
       })
 
-    buffer_timeout = operation.timeout + to_timeout(second: 1)
+    buffer_timeout = operation.timeout + 1_000
     GenServer.call(client, {:operation, operation}, buffer_timeout)
   end
 
@@ -626,7 +626,7 @@ defmodule Anubis.Client do
         timeout: Keyword.get(opts, :timeout, @default_operation_timeout)
       })
 
-    buffer_timeout = operation.timeout + to_timeout(second: 1)
+    buffer_timeout = operation.timeout + 1_000
     GenServer.call(client, {:operation, operation}, buffer_timeout)
   end
 
@@ -642,7 +642,7 @@ defmodule Anubis.Client do
   """
   @spec register_log_callback(t, log_callback(), opts :: Keyword.t()) :: :ok
   def register_log_callback(client, callback, opts \\ []) when is_function(callback, 3) do
-    timeout = opts[:timeout] || to_timeout(second: 5)
+    timeout = opts[:timeout] || 5_000
     GenServer.call(client, {:register_log_callback, callback}, timeout)
   end
 
@@ -656,7 +656,7 @@ defmodule Anubis.Client do
   """
   @spec unregister_log_callback(t, opts :: Keyword.t()) :: :ok
   def unregister_log_callback(client, opts \\ []) do
-    timeout = opts[:timeout] || to_timeout(second: 5)
+    timeout = opts[:timeout] || 5_000
     GenServer.call(client, :unregister_log_callback, timeout)
   end
 
@@ -682,7 +682,7 @@ defmodule Anubis.Client do
           :ok
   def register_progress_callback(client, progress_token, callback, opts \\ [])
       when is_function(callback, 3) and (is_binary(progress_token) or is_integer(progress_token)) do
-    timeout = opts[:timeout] || to_timeout(second: 5)
+    timeout = opts[:timeout] || 5_000
 
     GenServer.call(
       client,
@@ -703,7 +703,7 @@ defmodule Anubis.Client do
           :ok
   def unregister_progress_callback(client, progress_token, opts \\ [])
       when is_binary(progress_token) or is_integer(progress_token) do
-    timeout = opts[:timeout] || to_timeout(second: 5)
+    timeout = opts[:timeout] || 5_000
     GenServer.call(client, {:unregister_progress_callback, progress_token}, timeout)
   end
 
@@ -729,7 +729,7 @@ defmodule Anubis.Client do
           :ok | {:error, term()}
   def send_progress(client, progress_token, progress, total \\ nil, opts \\ [])
       when is_number(progress) and (is_binary(progress_token) or is_integer(progress_token)) do
-    timeout = opts[:timeout] || to_timeout(second: 5)
+    timeout = opts[:timeout] || 5_000
 
     GenServer.call(
       client,
@@ -756,7 +756,7 @@ defmodule Anubis.Client do
   @spec cancel_request(t, String.t(), String.t(), opts :: Keyword.t()) ::
           :ok | {:error, Error.t()}
   def cancel_request(client, request_id, reason \\ "client_cancelled", opts \\ []) do
-    timeout = opts[:timeout] || to_timeout(second: 5)
+    timeout = opts[:timeout] || 5_000
     GenServer.call(client, {:cancel_request, request_id, reason}, timeout)
   end
 
@@ -776,7 +776,7 @@ defmodule Anubis.Client do
   @spec cancel_all_requests(t, String.t(), opts :: Keyword.t()) ::
           {:ok, list(Request.t())} | {:error, Error.t()}
   def cancel_all_requests(client, reason \\ "client_cancelled", opts \\ []) do
-    timeout = opts[:timeout] || to_timeout(second: 5)
+    timeout = opts[:timeout] || 5_000
     GenServer.call(client, {:cancel_all_requests, reason}, timeout)
   end
 
@@ -793,7 +793,7 @@ defmodule Anubis.Client do
   """
   @spec add_root(t, String.t(), String.t() | nil, opts :: Keyword.t()) :: :ok
   def add_root(client, uri, name \\ nil, opts \\ []) when is_binary(uri) do
-    timeout = opts[:timeout] || to_timeout(second: 5)
+    timeout = opts[:timeout] || 5_000
     GenServer.call(client, {:add_root, uri, name}, timeout)
   end
 
@@ -809,7 +809,7 @@ defmodule Anubis.Client do
   """
   @spec remove_root(t, String.t(), opts :: Keyword.t()) :: :ok
   def remove_root(client, uri, opts \\ []) when is_binary(uri) do
-    timeout = opts[:timeout] || to_timeout(second: 5)
+    timeout = opts[:timeout] || 5_000
     GenServer.call(client, {:remove_root, uri}, timeout)
   end
 
@@ -824,7 +824,7 @@ defmodule Anubis.Client do
   """
   @spec list_roots(t, opts :: Keyword.t()) :: [map()]
   def list_roots(client, opts \\ []) do
-    timeout = opts[:timeout] || to_timeout(second: 5)
+    timeout = opts[:timeout] || 5_000
     GenServer.call(client, :list_roots, timeout)
   end
 
@@ -839,7 +839,7 @@ defmodule Anubis.Client do
   """
   @spec clear_roots(t, opts :: Keyword.t()) :: :ok
   def clear_roots(client, opts \\ []) do
-    timeout = opts[:timeout] || to_timeout(second: 5)
+    timeout = opts[:timeout] || 5_000
     GenServer.call(client, :clear_roots, timeout)
   end
 

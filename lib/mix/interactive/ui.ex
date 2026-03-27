@@ -37,7 +37,7 @@ defmodule Mix.Interactive.UI do
   """
   def format_output(data) do
     data
-    |> JSON.encode!()
+    |> Jason.encode!()
     |> String.split("\n")
     |> Enum.map_join("\n", fn line -> "  " <> line end)
   rescue

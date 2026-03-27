@@ -104,7 +104,7 @@ defmodule Anubis.Server.Transport.SSE do
     {:base_url, {:string, {:default, ""}}},
     {:post_path, {:string, {:default, "/messages"}}},
     {:registry, {:atom, {:default, Registry}}},
-    {:request_timeout, {:integer, {:default, to_timeout(second: 30)}}}
+    {:request_timeout, {:integer, {:default, 30_000}}}
   ])
 
   @doc """

@@ -196,13 +196,13 @@ defmodule Anubis.Server.Component.Prompt do
 
   @optional_callbacks title: 0, description: 0
 
-  defimpl JSON.Encoder, for: __MODULE__ do
+  defimpl Jason.Encoder, for: __MODULE__ do
     alias Anubis.Server.Component.Prompt
 
     def encode(%Prompt{} = prompt, _) do
       prompt
       |> Map.take([:name, :description, :arguments])
-      |> JSON.encode!()
+      |> Jason.encode!()
     end
   end
 end

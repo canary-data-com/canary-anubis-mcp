@@ -49,7 +49,7 @@ defmodule Anubis.Transport.STDIO do
   @impl Anubis.Transport
   @spec encode(map(), stdio_state()) :: {:ok, binary(), stdio_state()} | {:error, term()}
   def encode(message, state) when is_map(message) do
-    {:ok, JSON.encode!(message) <> "\n", state}
+    {:ok, Jason.encode!(message) <> "\n", state}
   rescue
     e ->
       {:error, {:encode_error, Exception.message(e)}}
@@ -75,7 +75,7 @@ defmodule Anubis.Transport.STDIO do
   defp decode_lines(lines) do
     lines
     |> Enum.reduce_while({:ok, []}, fn line, {:ok, acc} ->
-      case JSON.decode(line) do
+      case Jason.decode(line) do
         {:ok, %{} = message} -> {:cont, {:ok, [message | acc]}}
         {:ok, _} -> {:halt, {:error, :invalid_message}}
         {:error, _} -> {:halt, {:error, :invalid_json}}

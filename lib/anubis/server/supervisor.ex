@@ -75,7 +75,7 @@ defmodule Anubis.Server.Supervisor do
 
     if should_start?(transport) do
       session_idle_timeout = Keyword.get(opts, :session_idle_timeout)
-      request_timeout = Keyword.get(opts, :request_timeout, to_timeout(second: 30))
+      request_timeout = Keyword.get(opts, :request_timeout, 30_000)
       task_supervisor = Registry.task_supervisor_name(server)
 
       {registry_mod, registry_opts} = resolve_registry(opts, transport, server)
@@ -148,7 +148,7 @@ defmodule Anubis.Server.Supervisor do
       server_module: server,
       name: session_name,
       transport: session_config.transport,
-      session_idle_timeout: session_config.session_idle_timeout || to_timeout(minute: 30),
+      session_idle_timeout: session_config.session_idle_timeout || 1_800_000,
       timeout: session_config.timeout,
       task_supervisor: task_supervisor
     ]

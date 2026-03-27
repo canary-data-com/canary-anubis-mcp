@@ -8,8 +8,8 @@ Firstly, have sure to follow the official MCP (Model Context Protocol) [specific
 
 ### Prerequisites
 
-- Elixir 1.18+
-- Erlang/OTP 26+
+- Elixir 1.16
+- Erlang/OTP 25+
 - Python 3.11+ with uv (for echo server)
 - Go 1.21+ (for calculator server)
 - Just command runner

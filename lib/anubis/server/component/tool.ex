@@ -200,7 +200,7 @@ defmodule Anubis.Server.Component.Tool do
 
   @optional_callbacks annotations: 0, output_schema: 0, title: 0, description: 0, meta: 0
 
-  defimpl JSON.Encoder, for: __MODULE__ do
+  defimpl Jason.Encoder, for: __MODULE__ do
     alias Anubis.Server.Component.Tool
 
     def encode(%Tool{} = tool, _) do
@@ -213,7 +213,7 @@ defmodule Anubis.Server.Component.Tool do
       |> then(&if os = tool.output_schema, do: Map.put(&1, "outputSchema", os), else: &1)
       |> then(&if a = tool.annotations, do: Map.put(&1, "annotations", a), else: &1)
       |> then(&if m = tool.meta, do: Map.put(&1, "_meta", m), else: &1)
-      |> JSON.encode!()
+      |> Jason.encode!()
     end
   end
 end

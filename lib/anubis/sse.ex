@@ -15,8 +15,8 @@ defmodule Anubis.SSE do
     receive_timeout: :infinity,
     request_timeout: :infinity,
     max_reconnections: 5,
-    default_backoff: to_timeout(second: 1),
-    max_backoff: to_timeout(second: 15)
+    default_backoff: 1_000,
+    max_backoff: 15_000
   ]
 
   @retry_opts [:max_reconnections, :default_backoff, :max_backoff]
@@ -98,7 +98,7 @@ defmodule Anubis.SSE do
             level: :error
           )
 
-          Process.sleep(backoff + to_timeout(second: 1))
+          Process.sleep(backoff + 1_000)
           loop_sse_stream(req, ref, dest, opts, attempt + 1)
       end
     else

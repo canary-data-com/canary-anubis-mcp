@@ -75,7 +75,7 @@ defmodule Anubis.Transport.StreamableHTTP do
   @spec parse(binary() | map(), http_state()) ::
           {:ok, [map()], http_state()} | {:error, term()}
   def parse(raw, state) when is_binary(raw) do
-    case JSON.decode(raw) do
+    case Jason.decode(raw) do
       {:ok, %{} = message} ->
         {:ok, [message], state}
 
@@ -98,7 +98,7 @@ defmodule Anubis.Transport.StreamableHTTP do
   @impl Anubis.Transport
   @spec encode(map(), http_state()) :: {:ok, binary(), http_state()} | {:error, term()}
   def encode(message, state) when is_map(message) do
-    {:ok, JSON.encode!(message), state}
+    {:ok, Jason.encode!(message), state}
   rescue
     e ->
       {:error, {:encode_error, Exception.message(e)}}

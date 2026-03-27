@@ -123,8 +123,7 @@ defmodule Anubis.MCP.Message do
       "method" => {:required, {:enum, @request_methods}},
       "params" => {:dependent, &params_with_progress_token/1},
       "id" => {:required, {:either, {:string, :integer}}}
-    },
-    mode: :strict
+    }
   )
 
   defp params_with_progress_token(attrs) do
@@ -185,8 +184,7 @@ defmodule Anubis.MCP.Message do
          {:enum,
           ~w(notifications/initialized notifications/cancelled notifications/progress notifications/message notifications/roots/list_changed notifications/log/message notifications/tools/list_changed)}},
       "params" => {:dependent, &parse_notification_params_by_method/1}
-    },
-    mode: :strict
+    }
   )
 
   defp parse_notification_params_by_method(%{"method" => "notifications/initialized"}),
@@ -211,8 +209,7 @@ defmodule Anubis.MCP.Message do
       "jsonrpc" => {:required, {:string, {:eq, "2.0"}}},
       "result" => {:required, :any},
       "id" => {:required, {:either, {:string, :integer}}}
-    },
-    mode: :strict
+    }
   )
 
   defschema(
@@ -222,8 +219,7 @@ defmodule Anubis.MCP.Message do
       "content" => {:required, {:oneof, [@text_content_schema, @image_content_schema, @audio_content_schema]}},
       "model" => {:required, :string},
       "stopReason" => {:string, {:default, "endTurn"}}
-    },
-    mode: :strict
+    }
   )
 
   defschema(
@@ -232,8 +228,7 @@ defmodule Anubis.MCP.Message do
       get_schema(:response_schema),
       "result",
       get_schema(:sampling_result_schema)
-    ),
-    mode: :strict
+    )
   )
 
   defschema(
@@ -248,8 +243,7 @@ defmodule Anubis.MCP.Message do
            "data" => :any
          }},
       "id" => {:required, {:either, {:string, :integer}}}
-    },
-    mode: :strict
+    }
   )
 
   defschema(
@@ -260,8 +254,7 @@ defmodule Anubis.MCP.Message do
        get_schema(:notification_schema),
        get_schema(:response_schema),
        get_schema(:error_schema)
-     ]},
-    mode: :strict
+     ]}
   )
 
   # generic guards
@@ -399,7 +392,7 @@ defmodule Anubis.MCP.Message do
   end
 
   defp decode_line(line) do
-    case JSON.decode(line) do
+    case Jason.decode(line) do
       {:ok, message} when is_map(message) -> [message]
       {:ok, _} -> [:invalid]
       {:error, _} -> [:invalid]
@@ -592,7 +585,7 @@ defmodule Anubis.MCP.Message do
   end
 
   defp encode_message(data, schema) do
-    encoder = {schema, {:transform, fn data -> JSON.encode!(data) <> "\n" end}}
+    encoder = {schema, {:transform, fn data -> Jason.encode!(data) <> "\n" end}}
     Peri.validate(encoder, data)
   end
 

@@ -1,11 +1,11 @@
-# Anubis MCP
+# Anubis MCP [FORK]
 
 [![hex.pm](https://img.shields.io/hexpm/v/anubis_mcp.svg)](https://hex.pm/packages/anubis_mcp)
 [![docs](https://img.shields.io/badge/hex-docs-blue.svg)](https://hexdocs.pm/anubis_mcp)
 [![ci](https://github.com/zoedsoupe/anubis-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/zoedsoupe/anubis-mcp/actions/workflows/ci.yml)
 [![Hex Downloads](https://img.shields.io/hexpm/dt/anubis_mcp)](https://hex.pm/packages/anubis_mcp)
 
-A high-performance Model Context Protocol (MCP) implementation in Elixir.
+A high-performance Model Context Protocol (MCP) implementation in Elixir. <p style="color: orange;"> *This is a forked version created to support our Elixir stack (v1.16). It includes changes such as downgrading the Elixir and Peri dependency versions, along with other minor modifications.*</p>
 
 ## Overview
 

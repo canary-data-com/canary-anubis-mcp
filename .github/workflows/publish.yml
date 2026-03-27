@@ -1,9 +1,9 @@
 name: Publish to Hex
 
 on:
-  push:
-    tags:
-      - "v*"
+  # push:
+  #   tags:
+  #     - "v*"
   workflow_dispatch:
 
 jobs:
@@ -20,8 +20,8 @@ jobs:
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
         with:
-          elixir-version: 1.18
-          otp-version: 28
+          elixir-version: 1.16
+          otp-version: 25
 
       - name: Cache Elixir deps
         uses: actions/cache@v4
@@ -35,7 +35,7 @@ jobs:
         id: build-cache
         with:
           path: _build
-          key: ${{ runner.os }}-build-${{ env.MIX_ENV }}-27-1.18-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
+          key: ${{ runner.os }}-build-${{ env.MIX_ENV }}-25-1.16-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
 
       - name: Install deps
         if: steps.deps-cache.outputs.cache-hit != 'true'

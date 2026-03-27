@@ -182,7 +182,7 @@ defmodule Anubis.Server.Response do
   """
   @spec json(t(), data :: map, annotations) :: t
   def json(%{type: type} = r, data, opts \\ []) when type in ~w(tool resource)a do
-    text(r, JSON.encode!(data), opts)
+    text(r, Jason.encode!(data), opts)
   end
 
   @doc """

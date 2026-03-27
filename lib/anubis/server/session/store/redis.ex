@@ -326,7 +326,7 @@ if Code.ensure_loaded?(Redix) do
     end
 
     defp json_encode(data) do
-      {:ok, JSON.encode!(data)}
+      {:ok, Jason.encode!(data)}
     rescue
       error -> {:error, error}
     end
@@ -359,7 +359,7 @@ if Code.ensure_loaded?(Redix) do
           {:error, :not_found}
 
         {:ok, json} ->
-          case JSON.decode(json) do
+          case Jason.decode(json) do
             {:ok, data} -> {:ok, data}
             {:error, reason} -> {:error, {:decoding_failed, reason}}
           end
@@ -385,7 +385,7 @@ if Code.ensure_loaded?(Redix) do
 
     defp fetch_current_data(conn, key) do
       with {:ok, json} <- fetch_existing_key(conn, key),
-           {:ok, data} <- JSON.decode(json) do
+           {:ok, data} <- Jason.decode(json) do
         {:ok, data}
       else
         {:error, :not_found} = err -> err

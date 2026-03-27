@@ -37,7 +37,7 @@ defmodule Anubis.Server.Transport.STDIO do
   defschema(:parse_options, [
     {:server, {:required, {:oneof, [{:custom, &Anubis.genserver_name/1}, :pid, {:tuple, [:atom, :any]}]}}},
     {:name, {:custom, &Anubis.genserver_name/1}},
-    {:request_timeout, {:integer, {:default, to_timeout(second: 30)}}}
+    {:request_timeout, {:integer, {:default, 30_000}}}
   ])
 
   @impl Transport

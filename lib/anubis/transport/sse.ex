@@ -59,7 +59,7 @@ defmodule Anubis.Transport.SSE do
   @spec parse(binary() | map(), sse_state()) ::
           {:ok, [map()], sse_state()} | {:error, term()}
   def parse(raw, state) when is_binary(raw) do
-    case JSON.decode(raw) do
+    case Jason.decode(raw) do
       {:ok, %{} = message} ->
         {:ok, [message], state}
 
@@ -78,7 +78,7 @@ defmodule Anubis.Transport.SSE do
   @impl Anubis.Transport
   @spec encode(map(), sse_state()) :: {:ok, binary(), sse_state()} | {:error, term()}
   def encode(message, state) when is_map(message) do
-    {:ok, JSON.encode!(message) <> "\n", state}
+    {:ok, Jason.encode!(message) <> "\n", state}
   rescue
     e ->
       {:error, {:encode_error, Exception.message(e)}}
@@ -266,7 +266,7 @@ defmodule Anubis.Transport.SSE do
 
   defp handle_sse_event(%Event{event: "reconnect", data: data}, _pid) do
     reason =
-      case JSON.decode(data) do
+      case Jason.decode(data) do
         {:ok, %{"reason" => reason}} -> reason
         _ -> "unknown"
       end

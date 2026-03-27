@@ -200,7 +200,7 @@ defmodule Anubis.Server.Component.Resource do
 
   @optional_callbacks title: 0, uri: 0, uri_template: 0, description: 0
 
-  defimpl JSON.Encoder, for: __MODULE__ do
+  defimpl Jason.Encoder, for: __MODULE__ do
     alias Anubis.Server.Component.Resource
 
     def encode(%Resource{uri_template: uri_template} = resource, _) when not is_nil(uri_template) do
@@ -211,14 +211,14 @@ defmodule Anubis.Server.Component.Resource do
       |> then(&if resource.title, do: Map.put(&1, :title, resource.title), else: &1)
       |> then(&if resource.description, do: Map.put(&1, :description, resource.description), else: &1)
       |> then(&if resource.mime_type, do: Map.put(&1, :mimeType, resource.mime_type), else: &1)
-      |> JSON.encode!()
+      |> Jason.encode!()
     end
 
     def encode(%Resource{} = resource, _) do
       resource
       |> Map.take([:name, :uri, :description, :title])
       |> Map.put(:mimeType, resource.mime_type)
-      |> JSON.encode!()
+      |> Jason.encode!()
     end
   end
 end

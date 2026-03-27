@@ -442,7 +442,7 @@ defmodule Mix.Interactive.Commands do
   defp parse_tool_arguments(""), do: {:ok, %{}}
 
   defp parse_tool_arguments(input) do
-    case JSON.decode(input) do
+    case Jason.decode(input) do
       {:ok, args} -> {:ok, args}
       {:error, error} -> {:error, "Invalid JSON: #{inspect(error)}"}
     end
@@ -452,7 +452,7 @@ defmodule Mix.Interactive.Commands do
     file_path = Path.expand(file_path)
 
     with {:ok, content} <- File.read(file_path),
-         {:ok, json} <- JSON.decode(content) do
+         {:ok, json} <- Jason.decode(content) do
       {:ok, json}
     else
       {:error, :enoent} ->

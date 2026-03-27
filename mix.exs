@@ -8,7 +8,7 @@ defmodule Anubis.MixProject do
     [
       app: :anubis_mcp,
       version: @version,
-      elixir: "~> 1.18",
+      elixir: "~> 1.16",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       docs: docs(),
@@ -47,11 +47,12 @@ defmodule Anubis.MixProject do
   defp deps do
     [
       {:finch, "~> 0.19"},
-      {:peri, "0.6.2"},
+      {:peri, "~> 0.3.3"},
+      {:jason, "~> 1.4"},
       {:telemetry, "~> 1.2"},
       {:redix, "~> 1.5", optional: true},
       {:gun, "~> 2.2", optional: true},
-      {:burrito, "~> 1.0", optional: true},
+      {:burrito, "~> 1.2.0", optional: true},
       {:plug, "~> 1.18", optional: true},
       {:mox, "~> 1.2", only: :test},
       {:mimic, "~> 2.0", only: :test},
