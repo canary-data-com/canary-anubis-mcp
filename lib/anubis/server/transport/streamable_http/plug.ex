@@ -169,7 +169,17 @@ if Code.ensure_loaded?(Plug) do
           |> send_resp(202, "{}")
 
         {:error, :not_found} ->
-          send_error(conn, 400, "No active session")
+          case restore_session_from_store(opts, session_id) do
+            {:ok, session_pid} ->
+              GenServer.cast(session_pid, {:mcp_notification, message, context})
+
+              conn
+              |> put_resp_content_type("application/json")
+              |> send_resp(202, "{}")
+
+            {:error, _} ->
+              send_error(conn, 400, "No active session")
+          end
       end
     end
 
@@ -183,7 +193,17 @@ if Code.ensure_loaded?(Plug) do
           |> send_resp(202, "{}")
 
         {:error, :not_found} ->
-          send_error(conn, 400, "No active session")
+          case restore_session_from_store(opts, session_id) do
+            {:ok, session_pid} ->
+              GenServer.cast(session_pid, {:mcp_response, message, context})
+
+              conn
+              |> put_resp_content_type("application/json")
+              |> send_resp(202, "{}")
+
+            {:error, _} ->
+              send_error(conn, 400, "No active session")
+          end
       end
     end
 
@@ -343,11 +363,11 @@ if Code.ensure_loaded?(Plug) do
           start_new_session(opts, session_id)
 
         {:error, :not_found} ->
-          {:error, :no_session}
+          restore_session_from_store(opts, session_id)
       end
     end
 
-    defp start_new_session(%{server: server, registry_mod: registry_mod, registry_name: registry_name} = opts, session_id) do
+    defp start_new_session(%{server: server, registry_mod: registry_mod, registry_name: registry_name} = opts, session_id, extra_opts \\ []) do
       session_config = ServerSupervisor.get_session_config(server)
       session_name = Registry.session_name(server, session_id)
 
@@ -359,7 +379,7 @@ if Code.ensure_loaded?(Plug) do
         session_idle_timeout: session_config.session_idle_timeout || 1_800_000,
         timeout: opts.timeout,
         task_supervisor: session_config.task_supervisor
-      ]
+      ] ++ extra_opts
 
       case ServerSupervisor.start_session(server, session_opts) do
         {:ok, pid} ->
@@ -371,6 +391,25 @@ if Code.ensure_loaded?(Plug) do
 
         {:error, reason} ->
           {:error, reason}
+      end
+    end
+
+    defp restore_session_from_store(opts, session_id) do
+      case Anubis.get_session_store_adapter() do
+        nil ->
+          {:error, :no_session}
+
+        store ->
+          case store.load(session_id, []) do
+            {:ok, stored_state} ->
+              # Restore the actual initialized flag from the DB rather than assuming true.
+              # This handles notifications/initialized arriving cross-task (DB has initialized: false at that point).
+              pre_initialized = Map.get(stored_state, "initialized", false)
+              start_new_session(opts, session_id, pre_initialized: pre_initialized)
+
+            _ ->
+              {:error, :no_session}
+          end
       end
     end
 

@@ -66,7 +66,8 @@ defmodule Anubis.Server.Session do
     {:registry, {:atom, {:default, Anubis.Server.Registry}}},
     {:session_idle_timeout, {{:integer, {:gte, 1}}, {:default, @default_session_idle_timeout}}},
     {:timeout, {:integer, {:default, 30_000}}},
-    {:task_supervisor, {:required, {:custom, &Anubis.genserver_name/1}}}
+    {:task_supervisor, {:required, {:custom, &Anubis.genserver_name/1}}},
+    {:pre_initialized, {:boolean, {:default, false}}}
   ])
 
   @doc """
@@ -105,7 +106,7 @@ defmodule Anubis.Server.Session do
       server_module: module,
       protocol_version: nil,
       protocol_module: nil,
-      initialized: false,
+      initialized: opts.pre_initialized,
       client_info: nil,
       client_capabilities: nil,
       log_level: nil,
