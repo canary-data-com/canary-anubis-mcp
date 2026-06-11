@@ -228,7 +228,14 @@ if Code.ensure_loaded?(Plug) do
       end
     end
 
-    defp handle_json_request(conn, session_pid, message, session_id, context, %{session_header: session_header} = opts) do
+    defp handle_json_request(
+           conn,
+           session_pid,
+           message,
+           session_id,
+           context,
+           %{session_header: session_header} = opts
+         ) do
       case GenServer.call(session_pid, {:mcp_request, message, context}, opts.timeout) do
         {:ok, response} when is_binary(response) ->
           conn
@@ -367,19 +374,24 @@ if Code.ensure_loaded?(Plug) do
       end
     end
 
-    defp start_new_session(%{server: server, registry_mod: registry_mod, registry_name: registry_name} = opts, session_id, extra_opts \\ []) do
+    defp start_new_session(
+           %{server: server, registry_mod: registry_mod, registry_name: registry_name} = opts,
+           session_id,
+           extra_opts \\ []
+         ) do
       session_config = ServerSupervisor.get_session_config(server)
       session_name = Registry.session_name(server, session_id)
 
-      session_opts = [
-        session_id: session_id,
-        server_module: server,
-        name: session_name,
-        transport: session_config.transport,
-        session_idle_timeout: session_config.session_idle_timeout || 1_800_000,
-        timeout: opts.timeout,
-        task_supervisor: session_config.task_supervisor
-      ] ++ extra_opts
+      session_opts =
+        [
+          session_id: session_id,
+          server_module: server,
+          name: session_name,
+          transport: session_config.transport,
+          session_idle_timeout: session_config.session_idle_timeout || 1_800_000,
+          timeout: opts.timeout,
+          task_supervisor: session_config.task_supervisor
+        ] ++ extra_opts
 
       case ServerSupervisor.start_session(server, session_opts) do
         {:ok, pid} ->
@@ -402,9 +414,7 @@ if Code.ensure_loaded?(Plug) do
         store ->
           case store.load(session_id, []) do
             {:ok, stored_state} ->
-              # Restore the actual initialized flag from the DB rather than assuming true.
-              # This handles notifications/initialized arriving cross-task (DB has initialized: false at that point).
-              pre_initialized = Map.get(stored_state, "initialized", false)
+              pre_initialized = stored_state["initialized"] == true
               start_new_session(opts, session_id, pre_initialized: pre_initialized)
 
             _ ->
@@ -445,7 +455,8 @@ if Code.ensure_loaded?(Plug) do
       end
     end
 
-    defp determine_session_id(conn, session_header, message) when Message.is_initialize(message) do
+    defp determine_session_id(conn, session_header, message)
+         when Message.is_initialize(message) do
       case get_req_header(conn, session_header) do
         [session_id] when is_binary(session_id) and session_id != "" ->
           session_id
@@ -490,7 +501,9 @@ if Code.ensure_loaded?(Plug) do
       end
     end
 
-    defp maybe_read_request_body(%{body_params: %Unfetched{aspect: :body_params}} = conn, %{timeout: timeout}) do
+    defp maybe_read_request_body(%{body_params: %Unfetched{aspect: :body_params}} = conn, %{
+           timeout: timeout
+         }) do
       case Plug.Conn.read_body(conn, read_timeout: timeout) do
         {:ok, body, conn} -> {:ok, body, conn}
         {:error, reason} -> {:error, reason}
