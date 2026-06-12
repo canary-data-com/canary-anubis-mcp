@@ -114,6 +114,38 @@ defmodule Anubis.Server.SessionTest do
     end
   end
 
+  describe "initialization timing" do
+    test "accepts requests immediately after initialize, before notifications/initialized" do
+      transport_name = Registry.transport_name(StubServer, StubTransport)
+      start_supervised!({StubTransport, name: transport_name})
+      task_sup = Registry.task_supervisor_name(StubServer)
+      start_supervised!({Task.Supervisor, name: task_sup})
+
+      session_id = "timing_test_#{System.unique_integer([:positive])}"
+      session_name = Registry.session_name(StubServer, session_id)
+
+      session =
+        start_supervised!(
+          {Session,
+           session_id: session_id,
+           server_module: StubServer,
+           name: session_name,
+           transport: [layer: StubTransport, name: transport_name],
+           task_supervisor: task_sup},
+          id: :timing_session
+        )
+
+      init_msg = init_request("2025-03-26", %{"name" => "TestClient", "version" => "1.0.0"})
+      assert {:ok, _} = GenServer.call(session, {:mcp_request, init_msg, %{}})
+
+      tools_request = build_request("tools/list", %{}, System.unique_integer([:positive]))
+      assert {:ok, response} = GenServer.call(session, {:mcp_request, tools_request, %{}})
+
+      decoded = decode_message(response)
+      refute Map.has_key?(decoded, "error")
+    end
+  end
+
   describe "session expiration" do
     test "session expires after idle timeout" do
       transport_name = Registry.transport_name(StubServer, StubTransport)
