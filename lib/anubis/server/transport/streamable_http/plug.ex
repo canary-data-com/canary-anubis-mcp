@@ -253,14 +253,7 @@ if Code.ensure_loaded?(Plug) do
           handle_request_error(conn, error, message)
       end
     catch
-      :exit, reason ->
-        Logging.transport_event("session_call_failed", %{reason: reason}, level: :error)
-
-        send_jsonrpc_error(
-          conn,
-          Error.protocol(:internal_error, %{message: "Server unavailable"}),
-          extract_request_id(message)
-        )
+      :exit, reason -> handle_session_exit(conn, reason, message)
     end
 
     defp handle_sse_request(conn, session_pid, message, session_id, context, opts) do
@@ -280,14 +273,7 @@ if Code.ensure_loaded?(Plug) do
           handle_request_error(conn, error, message)
       end
     catch
-      :exit, reason ->
-        Logging.transport_event("session_call_failed", %{reason: reason}, level: :error)
-
-        send_jsonrpc_error(
-          conn,
-          Error.protocol(:internal_error, %{message: "Server unavailable"}),
-          extract_request_id(message)
-        )
+      :exit, reason -> handle_session_exit(conn, reason, message)
     end
 
     defp route_sse_response(conn, response, session_id, %{transport: transport} = opts) do
@@ -527,6 +513,41 @@ if Code.ensure_loaded?(Plug) do
       conn
       |> put_resp_content_type("application/json")
       |> send_resp(status, error_response)
+    end
+
+    defp handle_session_exit(conn, {:timeout, _} = reason, message) do
+      Logging.transport_event("session_call_timeout", %{reason: reason}, level: :error)
+
+      if Code.ensure_loaded?(Sentry) do
+        Sentry.capture_message("MCP request timed out",
+          level: :error,
+          extra: %{reason: inspect(reason)}
+        )
+      end
+
+      send_timeout_error(conn, extract_request_id(message))
+    end
+
+    defp handle_session_exit(conn, reason, message) do
+      Logging.transport_event("session_call_failed", %{reason: reason}, level: :error)
+
+      if Code.ensure_loaded?(Sentry) do
+        Sentry.capture_message("MCP session call failed",
+          level: :error,
+          extra: %{reason: inspect(reason)}
+        )
+      end
+
+      send_jsonrpc_error(conn, Error.protocol(:internal_error, %{message: "Server unavailable"}), extract_request_id(message))
+    end
+
+    defp send_timeout_error(conn, id) do
+      error_id = id || ID.generate_error_id()
+      {:ok, encoded_error} = Error.to_json_rpc(Error.protocol(:internal_error, %{message: "Request timed out"}), error_id)
+
+      conn
+      |> put_resp_content_type("application/json")
+      |> send_resp(504, encoded_error)
     end
 
     defp send_jsonrpc_error(conn, %Error{} = error, id) do
