@@ -228,14 +228,7 @@ if Code.ensure_loaded?(Plug) do
       end
     end
 
-    defp handle_json_request(
-           conn,
-           session_pid,
-           message,
-           session_id,
-           context,
-           %{session_header: session_header} = opts
-         ) do
+    defp handle_json_request(conn, session_pid, message, session_id, context, %{session_header: session_header} = opts) do
       case GenServer.call(session_pid, {:mcp_request, message, context}, opts.timeout) do
         {:ok, response} when is_binary(response) ->
           conn
@@ -268,7 +261,7 @@ if Code.ensure_loaded?(Plug) do
 
       case GenServer.call(session_pid, {:mcp_request, message, context}, opts.timeout) do
         {:ok, response} when is_binary(response) ->
-          route_sse_response(conn, response, session_id, opts)
+          stream_response_on_conn(conn, response, session_id, session_header)
 
         {:ok, nil} ->
           conn
@@ -290,52 +283,27 @@ if Code.ensure_loaded?(Plug) do
         )
     end
 
-    defp route_sse_response(conn, response, session_id, %{transport: transport} = opts) do
-      handler_pid = StreamableHTTP.get_sse_handler(transport, session_id)
+    # Per MCP 2025-06-18 Streamable HTTP: a POST that opts into SSE response
+    # gets its own stream on its own HTTP connection, scoped to that request.
+    # Never reuse the session-wide GET SSE handler.
+    defp stream_response_on_conn(conn, response, session_id, session_header) do
+      conn =
+        conn
+        |> put_resp_header(session_header, session_id)
+        |> Streaming.prepare_connection()
 
-      cond do
-        handler_pid && Process.alive?(handler_pid) ->
-          send(handler_pid, {:sse_message, response})
-
+      case Streaming.send_event(conn, response, 0) do
+        {:ok, conn} ->
           conn
-          |> put_resp_content_type("application/json")
-          |> send_resp(202, "{}")
-
-        handler_pid ->
-          StreamableHTTP.unregister_sse_handler(transport, session_id, handler_pid)
-          establish_sse_for_request(conn, response, session_id, opts)
-
-        true ->
-          establish_sse_for_request(conn, response, session_id, opts)
-      end
-    end
-
-    defp establish_sse_for_request(conn, response, session_id, opts) do
-      %{transport: transport, session_header: session_header} = opts
-
-      case StreamableHTTP.register_sse_handler(transport, session_id) do
-        :ok ->
-          handler_pid = self()
-          self_pid = self()
-          Task.start(fn -> send(self_pid, {:sse_message, response}) end)
-
-          conn
-          |> put_resp_header(session_header, session_id)
-          |> Streaming.prepare_connection()
-          |> Streaming.start(transport, session_id,
-            on_close: fn ->
-              StreamableHTTP.unregister_sse_handler(transport, session_id, handler_pid)
-            end
-          )
 
         {:error, reason} ->
-          Logging.transport_event("sse_registration_failed", %{reason: reason}, level: :error)
-
-          send_jsonrpc_error(
-            conn,
-            Error.protocol(:internal_error, %{reason: reason}),
-            nil
+          Logging.transport_event(
+            "sse_post_send_failed",
+            %{session_id: session_id, reason: inspect(reason)},
+            level: :warning
           )
+
+          conn
       end
     end
 
@@ -455,8 +423,7 @@ if Code.ensure_loaded?(Plug) do
       end
     end
 
-    defp determine_session_id(conn, session_header, message)
-         when Message.is_initialize(message) do
+    defp determine_session_id(conn, session_header, message) when Message.is_initialize(message) do
       case get_req_header(conn, session_header) do
         [session_id] when is_binary(session_id) and session_id != "" ->
           session_id
@@ -501,9 +468,7 @@ if Code.ensure_loaded?(Plug) do
       end
     end
 
-    defp maybe_read_request_body(%{body_params: %Unfetched{aspect: :body_params}} = conn, %{
-           timeout: timeout
-         }) do
+    defp maybe_read_request_body(%{body_params: %Unfetched{aspect: :body_params}} = conn, %{timeout: timeout}) do
       case Plug.Conn.read_body(conn, read_timeout: timeout) do
         {:ok, body, conn} -> {:ok, body, conn}
         {:error, reason} -> {:error, reason}
