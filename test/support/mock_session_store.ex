@@ -54,8 +54,17 @@ defmodule Anubis.Test.MockSessionStore do
     {:ok, sessions}
   end
 
-  def update_ttl(_session_id, _ttl_seconds, _opts) do
-    # Mock doesn't implement TTL
+  @doc "Number of `update_ttl/3` calls seen for a session, for refresh assertions."
+  def ttl_refresh_count(session_id) do
+    Agent.get(__MODULE__, &(get_in(&1, [:ttl_refreshes, session_id]) || 0))
+  end
+
+  def update_ttl(session_id, _ttl_ms, _opts) do
+    Agent.update(__MODULE__, fn data ->
+      refreshes = Map.get(data, :ttl_refreshes, %{})
+      Map.put(data, :ttl_refreshes, Map.update(refreshes, session_id, 1, &(&1 + 1)))
+    end)
+
     :ok
   end
 

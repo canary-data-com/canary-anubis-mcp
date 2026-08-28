@@ -4,6 +4,7 @@ defmodule Anubis.Server.SessionTest do
   alias Anubis.MCP.Message
   alias Anubis.Server.Registry
   alias Anubis.Server.Session
+  alias Anubis.Test.MockSessionStore
 
   require Message
 
@@ -143,6 +144,52 @@ defmodule Anubis.Server.SessionTest do
 
       decoded = decode_message(response)
       refute Map.has_key?(decoded, "error")
+    end
+  end
+
+  describe "store TTL refresh" do
+    setup do
+      start_supervised!(MockSessionStore)
+
+      previous = Application.get_env(:anubis_mcp, :session_store)
+
+      Application.put_env(:anubis_mcp, :session_store,
+        enabled: true,
+        adapter: MockSessionStore,
+        ttl: 100
+      )
+
+      on_exit(fn -> Application.put_env(:anubis_mcp, :session_store, previous) end)
+    end
+
+    # Sessions are only persisted at handshake, so without a refresh the store
+    # row expires while the session is still alive and serving requests.
+    test "keeps refreshing the store TTL while the session lives" do
+      transport_name = Registry.transport_name(StubServer, StubTransport)
+      start_supervised!({StubTransport, name: transport_name})
+      task_sup = Registry.task_supervisor_name(StubServer)
+      start_supervised!({Task.Supervisor, name: task_sup})
+
+      session_id = "ttl_refresh_#{System.unique_integer([:positive])}"
+
+      session =
+        start_supervised!(
+          {Session,
+           session_id: session_id,
+           server_module: StubServer,
+           name: Registry.session_name(StubServer, session_id),
+           transport: [layer: StubTransport, name: transport_name],
+           task_supervisor: task_sup},
+          id: :ttl_refresh_session
+        )
+
+      init_msg = init_request("2025-03-26", %{"name" => "TestClient", "version" => "1.0.0"})
+      assert {:ok, _} = GenServer.call(session, {:mcp_request, init_msg, %{}})
+
+      # ttl 100ms re-arms every 50ms, so 260ms is comfortably several ticks.
+      Process.sleep(260)
+
+      assert MockSessionStore.ttl_refresh_count(session_id) >= 2
     end
   end
 
