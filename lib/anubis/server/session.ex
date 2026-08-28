@@ -125,6 +125,7 @@ defmodule Anubis.Server.Session do
     }
 
     state = schedule_session_expiry(state)
+    maybe_schedule_store_ttl_refresh()
 
     Logging.server_event("session_starting", %{
       session_id: opts.session_id,
@@ -252,6 +253,12 @@ defmodule Anubis.Server.Session do
 
         {:noreply, state}
     end
+  end
+
+  def handle_info(:refresh_store_ttl, state) do
+    refresh_store_ttl(state)
+    maybe_schedule_store_ttl_refresh()
+    {:noreply, state}
   end
 
   def handle_info(:session_expired, state) do
@@ -956,6 +963,41 @@ defmodule Anubis.Server.Session do
   end
 
   # Session persistence
+
+  # Sessions are only persisted at handshake, so without this the store row
+  # expires while the session is still alive and in use. Re-arm at half the TTL
+  # so a single missed tick cannot expire it.
+  defp maybe_schedule_store_ttl_refresh do
+    if Anubis.get_session_store_adapter() do
+      interval = div(Anubis.get_session_store_ttl(), 2)
+      Process.send_after(self(), :refresh_store_ttl, interval)
+    end
+  end
+
+  defp refresh_store_ttl(%{initialized: false}), do: :ok
+
+  defp refresh_store_ttl(%{session_id: session_id} = state) do
+    if store = Anubis.get_session_store_adapter() do
+      case store.update_ttl(session_id, Anubis.get_session_store_ttl(), []) do
+        :ok ->
+          :ok
+
+        # The row was already reaped; write the live session back.
+        {:error, :not_found} ->
+          maybe_persist_session(state)
+
+        {:error, reason} ->
+          Logging.log(
+            :warning,
+            "Failed to refresh store TTL for session #{inspect(session_id)}",
+            session_id: session_id,
+            error: reason
+          )
+
+          :ok
+      end
+    end
+  end
 
   defp maybe_persist_session(%{session_id: session_id} = state) do
     if store = Anubis.get_session_store_adapter() do

@@ -70,4 +70,14 @@ defmodule Anubis do
 
     if enabled? && Code.ensure_loaded?(adapter), do: adapter
   end
+
+  # `:timer.minutes/1` rather than `to_timeout/1`: this fork still targets
+  # Elixir ~> 1.16, and `to_timeout/1` is 1.17+.
+  @default_session_store_ttl :timer.minutes(30)
+
+  @spec get_session_store_ttl :: pos_integer
+  def get_session_store_ttl do
+    config = Application.get_env(:anubis_mcp, :session_store) || []
+    config[:ttl] || @default_session_store_ttl
+  end
 end
