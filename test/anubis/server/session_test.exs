@@ -4,6 +4,7 @@ defmodule Anubis.Server.SessionTest do
   alias Anubis.MCP.Message
   alias Anubis.Server.Registry
   alias Anubis.Server.Session
+  alias Anubis.Test.MockSessionStore
 
   require Message
 
@@ -148,13 +149,13 @@ defmodule Anubis.Server.SessionTest do
 
   describe "store TTL refresh" do
     setup do
-      start_supervised!(Anubis.Test.MockSessionStore)
+      start_supervised!(MockSessionStore)
 
       previous = Application.get_env(:anubis_mcp, :session_store)
 
       Application.put_env(:anubis_mcp, :session_store,
         enabled: true,
-        adapter: Anubis.Test.MockSessionStore,
+        adapter: MockSessionStore,
         ttl: 100
       )
 
@@ -188,7 +189,7 @@ defmodule Anubis.Server.SessionTest do
       # ttl 100ms re-arms every 50ms, so 260ms is comfortably several ticks.
       Process.sleep(260)
 
-      assert Anubis.Test.MockSessionStore.ttl_refresh_count(session_id) >= 2
+      assert MockSessionStore.ttl_refresh_count(session_id) >= 2
     end
   end
 

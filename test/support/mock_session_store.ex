@@ -56,7 +56,7 @@ defmodule Anubis.Test.MockSessionStore do
 
   @doc "Number of `update_ttl/3` calls seen for a session, for refresh assertions."
   def ttl_refresh_count(session_id) do
-    Agent.get(__MODULE__, &get_in(&1, [:ttl_refreshes, session_id]) || 0)
+    Agent.get(__MODULE__, &(get_in(&1, [:ttl_refreshes, session_id]) || 0))
   end
 
   def update_ttl(session_id, _ttl_ms, _opts) do

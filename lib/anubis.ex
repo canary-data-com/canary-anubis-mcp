@@ -71,9 +71,10 @@ defmodule Anubis do
     if enabled? && Code.ensure_loaded?(adapter), do: adapter
   end
 
-  # `:timer.minutes/1` rather than `to_timeout/1`: this fork still targets
-  # Elixir ~> 1.16, and `to_timeout/1` is 1.17+.
-  @default_session_store_ttl :timer.minutes(30)
+  # A literal, not `to_timeout/1`: that is 1.17+ and this fork targets ~> 1.16.
+  # Styler rewrites `:timer.minutes/1` into `to_timeout/1`, so keep it a literal
+  # (same convention as @default_session_idle_timeout). 30 minutes in ms.
+  @default_session_store_ttl 1_800_000
 
   @spec get_session_store_ttl :: pos_integer
   def get_session_store_ttl do
