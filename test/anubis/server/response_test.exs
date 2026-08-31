@@ -44,6 +44,32 @@ defmodule Anubis.Server.ResponseTest do
              }
     end
 
+    test "includes _meta on tool protocol output when set" do
+      meta = %{
+        "mcp/www_authenticate" => [
+          ~s(Bearer resource_metadata="https://example.com/.well-known/oauth-protected-resource", error="invalid_token", error_description="Sign in to continue")
+        ]
+      }
+
+      result =
+        Response.tool()
+        |> Response.error("Authentication required")
+        |> Response.with_meta(meta)
+        |> Response.to_protocol()
+
+      assert result["isError"] == true
+      assert result["_meta"] == meta
+    end
+
+    test "omits _meta when not set" do
+      result =
+        Response.tool()
+        |> Response.text("ok")
+        |> Response.to_protocol()
+
+      refute Map.has_key?(result, "_meta")
+    end
+
     test "builds an image response" do
       result =
         Response.tool()

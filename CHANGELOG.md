@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.0.6] — Canary fork
+
+### Features
+
+* add `Response.with_meta/2` and emit `_meta` from tool `to_protocol/1` (ChatGPT OAuth linking / `mcp/www_authenticate`)
+
 ## [1.0.0](https://github.com/zoedsoupe/anubis-mcp/compare/v0.17.1...v1.0.0) (2026-03-16)
 
 

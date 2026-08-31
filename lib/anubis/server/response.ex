@@ -34,7 +34,8 @@ defmodule Anubis.Server.Response do
           hasMore: boolean,
           isError: boolean,
           structured_content: map | nil,
-          metadata: map
+          metadata: map,
+          meta: map | nil
         }
 
   @type annotations ::
@@ -54,7 +55,8 @@ defmodule Anubis.Server.Response do
     hasMore: false,
     isError: false,
     structured_content: nil,
-    metadata: %{}
+    metadata: %{},
+    meta: nil
   ]
 
   @doc """
@@ -395,6 +397,17 @@ defmodule Anubis.Server.Response do
   end
 
   @doc """
+  Attach arbitrary `_meta` to a tool response (emitted by `to_protocol/1`).
+
+  Used by hosts such as ChatGPT for OAuth linking via
+  `_meta["mcp/www_authenticate"]` on `isError: true` tool results.
+  """
+  @spec with_meta(t, map()) :: t
+  def with_meta(%{type: :tool} = r, meta) when is_map(meta) do
+    %{r | meta: meta}
+  end
+
+  @doc """
   Add a user message to a prompt response.
 
   ## Parameters
@@ -656,9 +669,12 @@ defmodule Anubis.Server.Response do
   def to_protocol(%{type: :tool} = r) do
     base = %{"content" => r.content, "isError" => r.isError}
 
-    if r.structured_content,
-      do: Map.put(base, "structuredContent", r.structured_content),
-      else: base
+    base =
+      if r.structured_content,
+        do: Map.put(base, "structuredContent", r.structured_content),
+        else: base
+
+    if r.meta, do: Map.put(base, "_meta", r.meta), else: base
   end
 
   def to_protocol(%{type: :prompt} = r) do
