@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.0.7] — Canary fork
+
+### Bug Fixes
+
+* Streamable HTTP: answer a request whose `Mcp-Session-Id` is unknown (expired, terminated, not restorable from the session store) with **404** instead of 400, as the MCP spec requires so clients re-initialize; keep 400 only for non-initialize requests that omit the header. Both cases now log a `session_not_found` / `session_id_missing` transport event.
+
 ## [1.0.6] — Canary fork
 
 ### Features

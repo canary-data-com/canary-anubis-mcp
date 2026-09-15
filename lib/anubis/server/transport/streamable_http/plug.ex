@@ -178,7 +178,7 @@ if Code.ensure_loaded?(Plug) do
               |> send_resp(202, "{}")
 
             {:error, _} ->
-              send_error(conn, 400, "No active session")
+              session_not_found(conn, opts)
           end
       end
     end
@@ -202,7 +202,7 @@ if Code.ensure_loaded?(Plug) do
               |> send_resp(202, "{}")
 
             {:error, _} ->
-              send_error(conn, 400, "No active session")
+              session_not_found(conn, opts)
           end
       end
     end
@@ -217,7 +217,7 @@ if Code.ensure_loaded?(Plug) do
           end
 
         {:error, :no_session} ->
-          send_error(conn, 400, "No active session")
+          session_not_found(conn, opts)
 
         {:error, reason} ->
           send_jsonrpc_error(
@@ -374,6 +374,23 @@ if Code.ensure_loaded?(Plug) do
       end
     end
 
+    # MCP Streamable HTTP, "Session Management": a request that carries an
+    # `Mcp-Session-Id` the server no longer knows MUST get 404, and the client
+    # MUST then start a new session with a fresh initialize. Only a request
+    # that omits the header entirely (other than initialize) gets 400. Both
+    # are logged so the rate of expired-session resumes is observable.
+    defp session_not_found(conn, %{session_header: session_header}) do
+      case get_req_header(conn, session_header) do
+        [session_id] when is_binary(session_id) and session_id != "" ->
+          Logging.transport_event("session_not_found", %{session_id: session_id}, level: :warning)
+          send_error(conn, 404, "Session not found")
+
+        _ ->
+          Logging.transport_event("session_id_missing", %{}, level: :warning)
+          send_error(conn, 400, "No active session")
+      end
+    end
+
     defp restore_session_from_store(opts, session_id) do
       case Anubis.get_session_store_adapter() do
         nil ->
@@ -482,6 +499,7 @@ if Code.ensure_loaded?(Plug) do
 
       mcp_error =
         case status do
+          404 -> Error.protocol(:invalid_request, data)
           405 -> Error.protocol(:method_not_found, data)
           406 -> Error.protocol(:invalid_request, data)
           _ -> Error.protocol(:internal_error, data)

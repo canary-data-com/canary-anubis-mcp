@@ -472,7 +472,10 @@ defmodule Anubis.Server.Transport.StreamableHTTP.PlugTest do
       assert conn.status == 202
     end
 
-    test "notification to unknown session returns 400", %{opts: opts} do
+    # MCP Streamable HTTP "Session Management": an unknown/terminated
+    # Mcp-Session-Id MUST get 404 (the client then re-initializes); only a
+    # request that omits the header gets 400.
+    test "notification to unknown session returns 404", %{opts: opts} do
       notification =
         build_notification("notifications/message", %{
           "level" => "info",
@@ -489,7 +492,55 @@ defmodule Anubis.Server.Transport.StreamableHTTP.PlugTest do
         |> put_req_header("mcp-session-id", "unknown-session")
         |> StreamableHTTPPlug.call(opts)
 
+      assert conn.status == 404
+      {:ok, error} = Jason.decode(conn.resp_body)
+      assert error["error"]["data"]["data"]["message"] == "Session not found"
+    end
+
+    test "request to unknown session returns 404", %{opts: opts} do
+      request = build_request("ping", %{})
+      {:ok, body} = Message.encode_request(request, 1)
+
+      conn =
+        :post
+        |> conn("/", body)
+        |> put_req_header("content-type", "application/json")
+        |> put_req_header("accept", "application/json")
+        |> put_req_header("mcp-session-id", "unknown-session")
+        |> StreamableHTTPPlug.call(opts)
+
+      assert conn.status == 404
+    end
+
+    test "response to unknown session returns 404", %{opts: opts} do
+      response = build_response(%{}, "server-req-1")
+      {:ok, body} = Message.encode_response(response, "server-req-1")
+
+      conn =
+        :post
+        |> conn("/", body)
+        |> put_req_header("content-type", "application/json")
+        |> put_req_header("accept", "application/json")
+        |> put_req_header("mcp-session-id", "unknown-session")
+        |> StreamableHTTPPlug.call(opts)
+
+      assert conn.status == 404
+    end
+
+    test "non-initialize request without a session header returns 400", %{opts: opts} do
+      request = build_request("ping", %{})
+      {:ok, body} = Message.encode_request(request, 1)
+
+      conn =
+        :post
+        |> conn("/", body)
+        |> put_req_header("content-type", "application/json")
+        |> put_req_header("accept", "application/json")
+        |> StreamableHTTPPlug.call(opts)
+
       assert conn.status == 400
+      {:ok, error} = Jason.decode(conn.resp_body)
+      assert error["error"]["data"]["data"]["message"] == "No active session"
     end
 
     test "initialize request creates new session", %{opts: opts} do
