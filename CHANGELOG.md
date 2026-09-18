@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.0.8] — Canary fork
+
+### Bug Fixes
+
+* Streamable HTTP: log an `invalid_message` transport event (`:warning`, with the message's method, id, top-level keys and params keys — never the payload) when a pre-parsed request body fails MCP message validation. This is the branch taken when the host framework has already decoded the JSON (e.g. Phoenix `body_params`); it answered 400 "Parse error" silently, unlike the raw-body branch, so unknown-method and malformed requests were invisible in production.
+
 ## [1.0.7] — Canary fork
 
 ### Bug Fixes

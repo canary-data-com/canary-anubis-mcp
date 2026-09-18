@@ -547,6 +547,32 @@ defmodule Anubis.Server.Transport.StreamableHTTP.PlugTest do
       assert error["error"]["data"]["data"]["message"] == "No active session"
     end
 
+    # Phoenix parses JSON before this plug runs, so the body arrives as a map;
+    # a message that fails validation must still be visible in the logs.
+    test "pre-parsed message with an unknown method returns 400 and logs its shape",
+         %{opts: opts, test_session_id: session_id} do
+      body = %{"jsonrpc" => "2.0", "id" => 7, "method" => "tasks/list", "params" => %{"cursor" => nil}}
+
+      log =
+        capture_log(fn ->
+          conn =
+            :post
+            |> conn("/", body)
+            |> put_req_header("content-type", "application/json")
+            |> put_req_header("accept", "application/json")
+            |> put_req_header("mcp-session-id", session_id)
+            |> StreamableHTTPPlug.call(opts)
+
+          assert conn.status == 400
+          {:ok, error} = Jason.decode(conn.resp_body)
+          assert error["error"]["message"] == "Parse error"
+        end)
+
+      assert log =~ "invalid_message"
+      assert log =~ ~s(method: "tasks/list")
+      assert log =~ ~s(params_keys: ["cursor"])
+    end
+
     test "GET stream for an unknown session returns 404", %{opts: opts} do
       conn =
         :get
