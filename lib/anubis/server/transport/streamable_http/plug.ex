@@ -80,21 +80,39 @@ if Code.ensure_loaded?(Plug) do
 
     # GET request handler - establishes SSE connection
 
-    defp handle_get(conn, %{transport: transport, session_header: session_header} = opts) do
+    defp handle_get(conn, %{session_header: session_header} = opts) do
       if wants_sse?(conn) do
-        session_id = get_or_create_session_id(conn, session_header)
+        case get_req_header(conn, session_header) do
+          [session_id] when is_binary(session_id) and session_id != "" ->
+            open_existing_sse_stream(conn, opts, session_id)
 
-        case StreamableHTTP.register_sse_handler(transport, session_id) do
-          :ok ->
-            start_sse_streaming(conn, Map.put(opts, :session_id, session_id))
-
-          {:error, reason} ->
-            Logging.transport_event("sse_registration_failed", %{reason: reason}, level: :error)
-
-            send_error(conn, 500, "Could not establish SSE connection")
+          _ ->
+            open_sse_stream(conn, opts, ID.generate_session_id())
         end
       else
         send_error(conn, 406, "Accept header must include text/event-stream")
+      end
+    end
+
+    # A stream for an existing session must find that session here or in the
+    # session store, otherwise 404 like POST: the client re-initializes instead
+    # of listening on a session that no longer exists.
+    defp open_existing_sse_stream(conn, opts, session_id) do
+      case find_or_restore_session(opts, session_id) do
+        {:ok, _pid} -> open_sse_stream(conn, opts, session_id)
+        {:error, _} -> session_not_found(conn, opts)
+      end
+    end
+
+    defp open_sse_stream(conn, %{transport: transport} = opts, session_id) do
+      case StreamableHTTP.register_sse_handler(transport, session_id) do
+        :ok ->
+          start_sse_streaming(conn, Map.put(opts, :session_id, session_id))
+
+        {:error, reason} ->
+          Logging.transport_event("sse_registration_failed", %{reason: reason}, level: :error)
+
+          send_error(conn, 500, "Could not establish SSE connection")
       end
     end
 
@@ -342,6 +360,13 @@ if Code.ensure_loaded?(Plug) do
       end
     end
 
+    defp find_or_restore_session(opts, session_id) do
+      case find_session(opts, session_id) do
+        {:ok, pid} -> {:ok, pid}
+        {:error, :not_found} -> restore_session_from_store(opts, session_id)
+      end
+    end
+
     defp start_new_session(
            %{server: server, registry_mod: registry_mod, registry_name: registry_name} = opts,
            session_id,
@@ -374,15 +399,17 @@ if Code.ensure_loaded?(Plug) do
       end
     end
 
-    # MCP Streamable HTTP, "Session Management": a request that carries an
-    # `Mcp-Session-Id` the server no longer knows MUST get 404, and the client
-    # MUST then start a new session with a fresh initialize. Only a request
-    # that omits the header entirely (other than initialize) gets 400. Both
-    # are logged so the rate of expired-session resumes is observable.
+    # MCP Streamable HTTP, "Session Management": a request (POST or GET) that
+    # carries an `Mcp-Session-Id` the server no longer knows MUST get 404, and
+    # the client MUST then start a new session with a fresh initialize. Only a
+    # request that omits the header entirely (other than initialize) gets 400.
+    # Both are logged so the rate of expired-session resumes is observable;
+    # 404 is the expected steady state once sessions expire, so it is :info,
+    # while a missing header is a misbehaving client and stays :warning.
     defp session_not_found(conn, %{session_header: session_header}) do
       case get_req_header(conn, session_header) do
         [session_id] when is_binary(session_id) and session_id != "" ->
-          Logging.transport_event("session_not_found", %{session_id: session_id}, level: :warning)
+          Logging.transport_event("session_not_found", %{session_id: session_id}, level: :info)
           send_error(conn, 404, "Session not found")
 
         _ ->
@@ -393,18 +420,32 @@ if Code.ensure_loaded?(Plug) do
 
     defp restore_session_from_store(opts, session_id) do
       case Anubis.get_session_store_adapter() do
-        nil ->
-          {:error, :no_session}
+        nil -> {:error, :no_session}
+        store -> restore_session_from_store(store, opts, session_id)
+      end
+    end
 
-        store ->
-          case store.load(session_id, []) do
-            {:ok, stored_state} ->
-              pre_initialized = stored_state["initialized"] == true
-              start_new_session(opts, session_id, pre_initialized: pre_initialized)
+    defp restore_session_from_store(store, opts, session_id) do
+      case store.load(session_id, []) do
+        {:ok, stored_state} -> start_restored_session(opts, session_id, stored_state)
+        _ -> {:error, :no_session}
+      end
+    end
 
-            _ ->
-              {:error, :no_session}
-          end
+    defp start_restored_session(opts, session_id, stored_state) do
+      pre_initialized = stored_state["initialized"] == true
+
+      with {:ok, pid} <- start_new_session(opts, session_id, pre_initialized: pre_initialized) do
+        # This node had no process for the session and rebuilt it from the
+        # store (cross-node hop, redeploy, or process idle-out). Logged at
+        # :info so the rate is visible without transport debug logging.
+        Logging.transport_event(
+          "session_restored",
+          %{session_id: session_id, pre_initialized: pre_initialized},
+          level: :info
+        )
+
+        {:ok, pid}
       end
     end
 

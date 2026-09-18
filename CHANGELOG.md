@@ -6,7 +6,9 @@ All notable changes to this project are documented in this file.
 
 ### Bug Fixes
 
-* Streamable HTTP: answer a request whose `Mcp-Session-Id` is unknown (expired, terminated, not restorable from the session store) with **404** instead of 400, as the MCP spec requires so clients re-initialize; keep 400 only for non-initialize requests that omit the header. Both cases now log a `session_not_found` / `session_id_missing` transport event.
+* Streamable HTTP: answer a request whose `Mcp-Session-Id` is unknown (expired, terminated, not restorable from the session store) with **404** instead of 400, as the MCP spec requires so clients re-initialize; keep 400 only for non-initialize requests that omit the header. Both cases now log a `session_not_found` (`:info`) / `session_id_missing` (`:warning`) transport event.
+* Streamable HTTP: apply the same rule to `GET` streams — a stream request for an unknown, non-restorable session is answered with 404 instead of silently opening a stream for a session that no longer exists. A `GET` without a session header keeps opening a fresh stream.
+* Streamable HTTP: log a `session_restored` transport event (`:info`) whenever a node rebuilds a session from the session store, so cross-node restores are observable in production.
 
 ## [1.0.6] — Canary fork
 
