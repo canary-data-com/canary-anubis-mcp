@@ -513,10 +513,32 @@ if Code.ensure_loaded?(Plug) do
 
     defp maybe_parse_messages(body) when is_map(body) do
       case Message.validate_message(body) do
-        {:ok, message} -> {:ok, [message]}
-        {:error, _} -> {:error, :invalid_json}
+        {:ok, message} ->
+          {:ok, [message]}
+
+        {:error, reason} ->
+          # Same outcome as the binary clause (400 "Parse error"), which already
+          # logs. Log the shape, not the payload: enough to tell an unknown
+          # method or a batch from a malformed request without echoing tool
+          # arguments.
+          Logging.transport_event(
+            "invalid_message",
+            %{
+              method: body["method"],
+              id: body["id"],
+              keys: Map.keys(body),
+              params_keys: params_keys(body),
+              reason: reason
+            },
+            level: :warning
+          )
+
+          {:error, :invalid_json}
       end
     end
+
+    defp params_keys(%{"params" => params}) when is_map(params), do: Map.keys(params)
+    defp params_keys(_), do: nil
 
     defp maybe_add_session_header(conn, session_header, session_id) do
       if get_req_header(conn, session_header) == [] do
