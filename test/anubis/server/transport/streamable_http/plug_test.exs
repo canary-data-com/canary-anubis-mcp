@@ -10,6 +10,7 @@ defmodule Anubis.Server.Transport.StreamableHTTP.PlugTest do
   alias Anubis.Server.Supervisor, as: ServerSupervisor
   alias Anubis.Server.Transport.StreamableHTTP
   alias Anubis.Server.Transport.StreamableHTTP.Plug, as: StreamableHTTPPlug
+  alias Anubis.Test.MockSessionStore
 
   @moduletag capture_log: true
 
@@ -62,6 +63,9 @@ defmodule Anubis.Server.Transport.StreamableHTTP.PlugTest do
   defp cleanup_session_config do
     :persistent_term.erase({ServerSupervisor, StubServer, :session_config})
   end
+
+  defp restore_session_store_config(nil), do: Application.delete_env(:anubis_mcp, :session_store)
+  defp restore_session_store_config(config), do: Application.put_env(:anubis_mcp, :session_store, config)
 
   describe "init/1" do
     setup do
@@ -472,7 +476,10 @@ defmodule Anubis.Server.Transport.StreamableHTTP.PlugTest do
       assert conn.status == 202
     end
 
-    test "notification to unknown session returns 400", %{opts: opts} do
+    # MCP Streamable HTTP "Session Management": an unknown/terminated
+    # Mcp-Session-Id MUST get 404 (the client then re-initializes); only a
+    # request that omits the header gets 400.
+    test "notification to unknown session returns 404", %{opts: opts} do
       notification =
         build_notification("notifications/message", %{
           "level" => "info",
@@ -489,7 +496,99 @@ defmodule Anubis.Server.Transport.StreamableHTTP.PlugTest do
         |> put_req_header("mcp-session-id", "unknown-session")
         |> StreamableHTTPPlug.call(opts)
 
+      assert conn.status == 404
+      {:ok, error} = Jason.decode(conn.resp_body)
+      assert error["error"]["data"]["data"]["message"] == "Session not found"
+    end
+
+    test "request to unknown session returns 404", %{opts: opts} do
+      request = build_request("ping", %{})
+      {:ok, body} = Message.encode_request(request, 1)
+
+      conn =
+        :post
+        |> conn("/", body)
+        |> put_req_header("content-type", "application/json")
+        |> put_req_header("accept", "application/json")
+        |> put_req_header("mcp-session-id", "unknown-session")
+        |> StreamableHTTPPlug.call(opts)
+
+      assert conn.status == 404
+    end
+
+    test "response to unknown session returns 404", %{opts: opts} do
+      response = build_response(%{}, "server-req-1")
+      {:ok, body} = Message.encode_response(response, "server-req-1")
+
+      conn =
+        :post
+        |> conn("/", body)
+        |> put_req_header("content-type", "application/json")
+        |> put_req_header("accept", "application/json")
+        |> put_req_header("mcp-session-id", "unknown-session")
+        |> StreamableHTTPPlug.call(opts)
+
+      assert conn.status == 404
+    end
+
+    test "non-initialize request without a session header returns 400", %{opts: opts} do
+      request = build_request("ping", %{})
+      {:ok, body} = Message.encode_request(request, 1)
+
+      conn =
+        :post
+        |> conn("/", body)
+        |> put_req_header("content-type", "application/json")
+        |> put_req_header("accept", "application/json")
+        |> StreamableHTTPPlug.call(opts)
+
       assert conn.status == 400
+      {:ok, error} = Jason.decode(conn.resp_body)
+      assert error["error"]["data"]["data"]["message"] == "No active session"
+    end
+
+    test "GET stream for an unknown session returns 404", %{opts: opts} do
+      conn =
+        :get
+        |> conn("/")
+        |> put_req_header("accept", "text/event-stream")
+        |> put_req_header("mcp-session-id", "unknown-session")
+        |> StreamableHTTPPlug.call(opts)
+
+      assert conn.status == 404
+      {:ok, error} = Jason.decode(conn.resp_body)
+      assert error["error"]["data"]["data"]["message"] == "Session not found"
+    end
+
+    test "request to a session known only to the store is restored and served", %{opts: opts} do
+      start_supervised!(MockSessionStore)
+      MockSessionStore.reset!()
+      original = Application.get_env(:anubis_mcp, :session_store)
+      Application.put_env(:anubis_mcp, :session_store, enabled: true, adapter: MockSessionStore)
+      on_exit(fn -> restore_session_store_config(original) end)
+
+      # Real stores round-trip through JSON, so restored state has string keys.
+      session_id = "stored-on-another-node"
+      :ok = MockSessionStore.save(session_id, %{"id" => session_id, "initialized" => true}, [])
+
+      request = build_request("ping", %{})
+      {:ok, body} = Message.encode_request(request, 1)
+
+      log =
+        capture_log(fn ->
+          conn =
+            :post
+            |> conn("/", body)
+            |> put_req_header("content-type", "application/json")
+            |> put_req_header("accept", "application/json")
+            |> put_req_header("mcp-session-id", session_id)
+            |> StreamableHTTPPlug.call(opts)
+
+          assert conn.status == 200
+          assert {:ok, %{"id" => 1, "result" => %{}}} = Jason.decode(conn.resp_body)
+        end)
+
+      assert log =~ "session_restored"
     end
 
     test "initialize request creates new session", %{opts: opts} do
